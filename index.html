@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apostilas - Matéria Premium</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- CABEÇALHO -->
+    <header class="cabecalho">
+        <div class="logo">
+            <img src="logo.png" alt="Logótipo Matéria" width="150">
+        </div>
+        
+        <nav class="menu-principal">
+            <ul>
+                <li><a href="index.html">Início</a></li>
+                <!-- Note que a classe 'ativo' mudou de visual -->
+                <li><a href="apostilas.html" class="ativo-botao">Apostila</a></li>
+                <li><a href="#">Simulado</a></li>
+                <li><a href="#">Biblioteca</a></li>
+            </ul>
+        </nav>
+
+        <div class="menu-usuario">
+            <!-- A imagem substitui o botão de texto -->
+            <img src="premium.png" alt="Matéria Premium" class="btn-img-premium">
+            
+            <button class="btn-entrar">Entrar</button>
+        </div>
+    </header>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="area-apostilas-nova">
+        
+        <!-- Botão de Filtrar no topo -->
+        <div class="topo-acoes">
+            <button id="btn-abrir-filtro" class="btn-filtrar-topo">
+                ☰ Filtrar
+            </button>
+        </div>
+
+        <!-- Grelha de Apostilas -->
+        <section class="resultados-apostilas-nova">
+            <!-- Cartão 1 -->
+            <div class="cartao-apostila-cinza">
+                <img src="capa-admin.jpg" alt="Capa Administração">
+                <div class="info-apostila-centro">
+                    <h3>Administração</h3>
+                    <p>Fundamentos - gestão - estratégia</p>
+                </div>
+            </div>
+
+            <!-- Cartão 2 -->
+            <div class="cartao-apostila-cinza">
+                <img src="capa-admin.jpg" alt="Capa Administração">
+                <div class="info-apostila-centro">
+                    <h3>Administração</h3>
+                    <p>Fundamentos - gestão - estratégia</p>
+                </div>
+            </div>
+            
+            <!-- Cartão 3 -->
+            <div class="cartao-apostila-cinza">
+                <img src="capa-admin.jpg" alt="Capa Administração">
+                <div class="info-apostila-centro">
+                    <h3>Administração</h3>
+                    <p>Fundamentos - gestão - estratégia</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- JANELA FLUTUANTE DE FILTRO (MODAL) -->
+    <div id="modal-filtro" class="modal-escondido">
+        <div class="modal-conteudo">
+            <input type="text" placeholder="Pesquisar por apostila, matéria, ou disciplina">
+            
+            <div class="botoes-filtro-grid">
+                <button class="btn-filtro-modal ativo">Administração</button>
+                <button class="btn-filtro-modal">Concurso Banco do Brasil</button>
+                <button class="btn-filtro-modal">INSS</button>
+                <button class="btn-filtro-modal">Correios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT PARA ABRIR/FECHAR O FILTRO -->
+    <script>
+        const btnAbrir = document.getElementById('btn-abrir-filtro');
+        const modal = document.getElementById('modal-filtro');
+
+        // Quando clica no botão, o modal aparece e o botão muda de cor
+        btnAbrir.addEventListener('click', () => {
+            if (modal.style.display === 'flex') {
+                modal.style.display = 'none';
+                btnAbrir.classList.remove('btn-filtrar-ativo');
+            } else {
+                modal.style.display = 'flex';
+                btnAbrir.classList.add('btn-filtrar-ativo');
+            }
+        });
+
+        // Fechar se clicar fora da caixinha branca
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                btnAbrir.classList.remove('btn-filtrar-ativo');
+            }
+        });
+    </script>
+</body>
+</html>
