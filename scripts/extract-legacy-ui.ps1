@@ -29,6 +29,24 @@ function Export-LegacyPage {
 Export-LegacyPage -Source (Join-Path $sourceRoot 'index.html') -Name 'portal'
 Export-LegacyPage -Source (Join-Path $sourceRoot 'paineldecontrole.html') -Name 'admin'
 
+# Mantém uma única cópia de cada imagem ativa em public/assets, mesmo quando o
+# HTML histórico usa vários nomes para o mesmo arquivo.
+$portalHtmlPath = Join-Path $targetRoot 'portal.html'
+$portalHtml = [System.IO.File]::ReadAllText($portalHtmlPath)
+$assetReplacements = @{
+    'logomateria1.png' = '/assets/logo-materia.png'
+    'logomateria2.png' = '/assets/logo-materia.png'
+    'íconemateriabranco.png' = '/assets/logo-materia.png'
+    'íconemateriapremium.png' = '/assets/premium.png'
+    'íconemateriapremium_2.png' = '/assets/premium.png'
+    'você é premium.png' = '/assets/premium.png'
+    'íconecupom.png' = '/assets/icone-cupom.png'
+}
+foreach ($entry in $assetReplacements.GetEnumerator()) {
+    $portalHtml = $portalHtml.Replace($entry.Key, $entry.Value)
+}
+[System.IO.File]::WriteAllText($portalHtmlPath, $portalHtml, $utf8)
+
 # O servidor atual do PDF não libera CORS para localhost. Esta adaptação usa
 # o proxy do Vite apenas no desenvolvimento e mantém a URL original em produção.
 $portalScriptPath = Join-Path $targetRoot 'portal.js'

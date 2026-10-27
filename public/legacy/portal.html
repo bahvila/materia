@@ -3,7 +3,7 @@
          ========================================================= -->
     <header>
         <div class="header-left">
-            <img src="logomateria1.png" onerror="this.onerror=null; this.src='logomateria.png';" alt="MATÉRIA" class="logo-header" onclick="mudarSeparador('inicio')">
+            <img src="/assets/logo-materia.png" alt="MATÉRIA" class="logo-header" onclick="mudarSeparador('inicio')">
             <nav>
                 <button class="nav-btn active" onclick="mudarSeparador('inicio')">Início</button>
                 <button class="nav-btn" onclick="mudarSeparador('apostila')">Apostila</button>
@@ -14,16 +14,16 @@
 
         <div class="header-right">
             <!-- Selo MATÉRIA PREMIUM -->
-            <img id="btn-banner-premium" src="íconemateriapremium.png" alt="Matéria Premium" class="btn-img-premium" onclick="abrirModal('modal-premium')">
+                <img id="btn-banner-premium" src="/assets/premium.png" alt="Matéria Premium" class="btn-img-premium" onclick="abrirModal('modal-premium')">
             
             <!-- Selo VOCÊ É PREMIUM -->
             <div id="badge-voce-premium" class="pill-voce-premium" onclick="abrirModal('modal-premium')">
-                <img src="você é premium.png" alt="Você é Premium">
+                    <img src="/assets/premium.png" alt="Você é Premium">
             </div>
 
             <!-- Botão Cupom -->
             <button id="btn-cupom-topo" class="btn-header-cupom" title="Meus Cupons / Inserir Código" onclick="togglePopoverCupons()">
-                <img src="íconecupom.png" alt="%">
+                    <img src="/assets/icone-cupom.png" alt="%">
             </button>
 
             <!-- Botão Entrar -->
@@ -206,7 +206,7 @@
             <div id="sim-view-prova" class="view-simulado">
                 <div class="barra-topo-prova">
                     <div class="bloco-esquerda-prova">
-                        <img src="íconemateriabranco.png" onerror="this.onerror=null; this.src='logomateria.png';" alt="M" class="icone-m-img">
+                        <img src="/assets/logo-materia.png" alt="M" class="icone-m-img">
                     </div>
                     
                     <div id="barra-paginacao-prova" class="lista-numeros-questoes"></div>
@@ -310,7 +310,7 @@
                 </div>
 
                 <div class="coluna-direita-assinatura">
-                    <img src="íconemateriapremium.png" onerror="this.onerror=null; this.src='íconemateriapremium_2.png';" alt="Matéria Premium" style="max-width: 280px; width: 100%;">
+                            <img src="/assets/premium.png" alt="Matéria Premium" style="max-width: 280px; width: 100%;">
                     <div class="preco-gigante">R$ 24,<small>99</small></div>
                     <button class="btn-dourado-assinar" onclick="abrirCheckoutPagamento('Assinatura Matéria Premium', '24,99', 'premium')">ASSINE AGORA</button>
                 </div>
@@ -407,7 +407,7 @@
     <div id="modal-auth" class="modal-overlay">
         <div class="modal-marrom-padrao" style="max-width:420px; text-align:center;">
             <button class="btn-header-entrar" style="position:absolute; top:16px; right:16px; height:30px;" onclick="fecharModal('modal-auth')">X</button>
-            <img src="logomateria2.png" onerror="this.onerror=null; this.src='logomateria.png';" alt="Matéria" style="height:32px; margin-bottom:18px;">
+                <img src="/assets/logo-materia.png" alt="Matéria" style="height:32px; margin-bottom:18px;">
             <h3 style="margin:0 0 10px 0; font-size:22px;">Entrar na Plataforma</h3>
             <p id="aviso-acao-pendente" style="font-size:14px; opacity:0.9; margin-bottom:24px;">Utilize a sua conta Google para sincronizar simulados, cupons e biblioteca na nuvem.</p>
             
