@@ -1,0 +1,37 @@
+:root {
+            --bg-creme: #FAF8F5;
+            --marrom-header: #46352E;
+            --marrom-escuro: #2C1F1A;
+            --cinza-painel: #EBEBEB;
+            --verde-cupom: #2E6F40;
+            --dourado: #F5B82E;
+            --branco: #FFFFFF;
+        }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { margin: 0; background-color: var(--bg-creme); color: var(--marrom-escuro); padding: 30px; }
+        
+        .container-admin { max-width: 1000px; margin: 0 auto; }
+        h1 { font-size: 32px; font-weight: 800; margin-bottom: 25px; color: var(--marrom-header); }
+        
+        .grid-admin { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        @media(max-width: 800px) { .grid-admin { grid-template-columns: 1fr; } }
+
+        .card-admin {
+            background: var(--branco); border-radius: 16px; padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #DCDCDC;
+        }
+        .card-admin h3 { margin-top: 0; font-size: 20px; font-weight: 800; color: var(--marrom-header); border-bottom: 2px solid var(--cinza-painel); padding-bottom: 10px; }
+        
+        label { display: block; font-size: 13px; font-weight: 700; margin: 12px 0 4px 0; }
+        input, textarea, select {
+            width: 100%; padding: 10px 14px; border-radius: 8px; border: 1.5px solid #ccc; font-size: 14px; outline: none;
+        }
+        input:focus, textarea:focus { border-color: var(--marrom-header); }
+        
+        .btn-marrom {
+            background-color: var(--marrom-header); color: var(--branco); border: none;
+            padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: 15px;
+            cursor: pointer; width: 100%; margin-top: 18px; transition: 0.2s;
+        }
+        .btn-marrom:hover { filter: brightness(1.1); }
+        .status-msg { font-size: 13px; font-weight: 700; margin-top: 10px; color: var(--verde-cupom); }

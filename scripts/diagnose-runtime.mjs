@@ -1,0 +1,23 @@
+import { chromium } from 'playwright-core'
+
+const browser = await chromium.launch({
+  executablePath: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  headless: true,
+})
+
+const page = await browser.newPage()
+const events = []
+page.on('console', (message) => events.push(`console:${message.type()}: ${message.text()}`))
+page.on('pageerror', (error) => events.push(`pageerror: ${error.stack || error.message}`))
+page.on('requestfailed', (request) => events.push(`requestfailed: ${request.url()} — ${request.failure()?.errorText}`))
+page.on('response', (response) => {
+  if (response.status() >= 400) events.push(`response:${response.status()}: ${response.url()}`)
+})
+
+const targetUrl = process.argv[2] || 'http://localhost:5173'
+await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 10_000 })
+await page.waitForTimeout(2_000)
+console.log(`title: ${await page.title()}`)
+console.log(`root: ${(await page.locator('#root').innerText()).slice(0, 300)}`)
+console.log(events.join('\n'))
+await browser.close()

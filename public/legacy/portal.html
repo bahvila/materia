@@ -1,0 +1,442 @@
+<!-- =========================================================
+         CABEÇALHO PRINCIPAL (Estrutura HTML Corrigida)
+         ========================================================= -->
+    <header>
+        <div class="header-left">
+            <img src="logomateria1.png" onerror="this.onerror=null; this.src='logomateria.png';" alt="MATÉRIA" class="logo-header" onclick="mudarSeparador('inicio')">
+            <nav>
+                <button class="nav-btn active" onclick="mudarSeparador('inicio')">Início</button>
+                <button class="nav-btn" onclick="mudarSeparador('apostila')">Apostila</button>
+                <button class="nav-btn" onclick="mudarSeparador('simulados')">Simulado</button>
+                <button class="nav-btn" onclick="mudarSeparador('biblioteca')">Biblioteca</button>
+            </nav>
+        </div>
+
+        <div class="header-right">
+            <!-- Selo MATÉRIA PREMIUM -->
+            <img id="btn-banner-premium" src="íconemateriapremium.png" alt="Matéria Premium" class="btn-img-premium" onclick="abrirModal('modal-premium')">
+            
+            <!-- Selo VOCÊ É PREMIUM -->
+            <div id="badge-voce-premium" class="pill-voce-premium" onclick="abrirModal('modal-premium')">
+                <img src="você é premium.png" alt="Você é Premium">
+            </div>
+
+            <!-- Botão Cupom -->
+            <button id="btn-cupom-topo" class="btn-header-cupom" title="Meus Cupons / Inserir Código" onclick="togglePopoverCupons()">
+                <img src="íconecupom.png" alt="%">
+            </button>
+
+            <!-- Botão Entrar -->
+            <button id="btn-entrar-topo" class="btn-header-entrar" onclick="abrirModal('modal-auth')">
+                Entrar
+            </button>
+
+            <!-- Botão Usuário Logado -->
+            <button id="btn-usuario-topo" class="btn-header-usuario" style="display: none;" onclick="logout()">
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/></svg>
+                <span id="label-nome-usuario">USUÁRIO</span>
+            </button>
+            
+            <!-- JANELA POPOVER DE CUPONS -->
+            <div id="popover-cupons" class="popover-cupons-header">
+                <div class="abas-cupom-topo">
+                    <button id="tab-btn-inserir" class="tab-cupom-btn active" onclick="alternarAbaCupom('inserir')">inserir código</button>
+                    <button id="tab-btn-meus" class="tab-cupom-btn" onclick="alternarAbaCupom('meus')">meus cupons</button>
+                </div>
+
+                <!-- Aba 1: Inserir Código -->
+                <div id="conteudo-cupom-inserir" class="caixa-interna-cupom">
+                    <input type="text" id="input-codigo-cupom" class="input-digitar-cupom" placeholder="Digitar">
+                    <button class="btn-amarelo-cupom" onclick="confirmarCodigoCupom()">confirmar</button>
+                </div>
+
+                <!-- Aba 2: Meus Cupons -->
+                <div id="conteudo-cupom-meus" class="caixa-interna-cupom" style="display: none; justify-content: flex-start;">
+                    <div id="lista-meus-cupons-DOM"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- =========================================================
+             ABA 1: INÍCIO
+             ========================================================= -->
+        <div id="inicio" class="tab-content active">
+            <div class="hero-home">
+                <h1>Sua jornada de conhecimento<br>sem barreira</h1>
+                <p>Apostilas digitais diagramadas para leitura fluida e simulados práticos com foco nos editais concorridos do Brasil</p>
+                <div class="search-row-home">
+                    <input type="text" id="input-busca-home" placeholder="Pesquise por matéria, cargo ou edital...">
+                    <button onclick="executarBuscaInicial()">Buscar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- =========================================================
+             ABA 2: APOSTILAS
+             ========================================================= -->
+        <div id="apostila" class="tab-content">
+            
+            <!-- Sub-vista 1: Catálogo de Apostilas -->
+            <div id="sub-catalogo" class="subview-apostila active">
+                <div class="barra-topo-apostilas">
+                    <button class="btn-marrom" onclick="togglePopoverFiltroApostila()">
+                        <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm3 5h12v2H6v-2zm4 5h4v2h-4v-2z"/></svg>
+                        Filtrar
+                    </button>
+
+                    <div id="chip-filtro-apostila" class="chip-filtro">
+                        <span id="texto-chip-apostila">Administração</span>
+                        <span class="fechar-chip" onclick="limparFiltroApostila()">X</span>
+                    </div>
+
+                    <div id="popover-filtro-apostila" class="popover-marrom">
+                        <input type="text" id="input-pesquisa-apostila" placeholder="Pesquisar por apostila, matéria, ou disciplina" oninput="renderizarCatalogoApostilas()">
+                        <div class="pills-container">
+                            <button class="pill-branca" onclick="aplicarTagApostila('Administração')">Administração</button>
+                            <button class="pill-branca" onclick="aplicarTagApostila('Concurso Banco do Brasil')">Concurso Banco do Brasil</button>
+                            <button class="pill-branca" onclick="aplicarTagApostila('INSS')">INSS</button>
+                            <button class="pill-branca" onclick="aplicarTagApostila('Correios')">Correios</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="grid-catalogo-apostilas" class="grid-3-col"></div>
+            </div>
+
+            <!-- Sub-vista 2: Detalhes da Apostila -->
+        <!-- Aviso dinâmico quando o aluno clica em usar cupom fora da apostila -->
+            <div id="banner-escolha-apostila-cupom" class="aviso-selecionar-cupom">
+                <span>🎟️ Selecione abaixo qual apostila você deseja desbloquear gratuitamente com seu cupom!</span>
+                <button onclick="cancelarModoEscolhaCupom()" style="background:#111; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-weight:800; cursor:pointer;">Cancelar</button>
+            </div>
+
+            <!-- Sub-vista 2: Detalhes da Apostila (Novo Design) -->
+            <div id="sub-detalhe" class="subview-apostila">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                    <button class="btn-marrom" onclick="voltarParaCatalogo()">◀ Voltar</button>
+                    <button class="btn-marrom" style="background:transparent; color:var(--marrom-header); border:1.5px solid var(--marrom-header);" onclick="irParaSimuladoDaApostila()">🎯 Praticar Simulado desta Matéria</button>
+                </div>
+                
+                <div class="painel-detalhe-apostila">
+                    <div class="detalhe-topo-grid">
+                        <!-- Coluna Esquerda: Capa + Título embaixo -->
+                        <div class="detalhe-coluna-capa">
+                            <img id="detalhe-img-capa" src="capa apostila de administração.jpg" onerror="this.onerror=null; this.src='capa apostila de administração_2.jpg';" alt="Capa da Apostila" class="detalhe-capa-img">
+                            <h3 id="detalhe-titulo-card" class="detalhe-titulo-abaixo-capa">Administração</h3>
+                            <span id="detalhe-sub-card" style="display:none;"></span>
+                            <span id="detalhe-ano-card" style="display:none;"></span>
+                        </div>
+
+                        <!-- Coluna Direita: Caixa Branca Arredondada com Descrição -->
+                        <div class="detalhe-caixa-branca-texto">
+                            <div id="detalhe-box-descricao" class="detalhe-texto-scroll"></div>
+                        </div>
+                    </div>
+
+                    <!-- Barra Inferior de Ações: Ler (em forte destaque), Tenho Cupom e Teste no canto -->
+                    <div class="barra-botoes-detalhe-novo">
+                        <div class="grupo-esquerda-ler-cupom">
+                            <button id="btn-principal-ler-apostila" class="btn-ler-destaque" onclick="fluxoClicarLerApostila()">
+                                <span class="txt-ler">Ler</span>
+                                <span id="detalhe-preco-card" class="txt-preco">(14,99)</span>
+                            </button>
+
+                            <button id="btn-tenho-cupom-apostila" class="btn-tenho-cupom-escuro" onclick="abrirPopoverCupomPelaApostila()">
+                                Tenho<br><span class="destaque-amarelo">cupom</span>!
+                            </button>
+                        </div>
+
+                        <button id="btn-teste-20-paginas" class="btn-teste-canto-cinza" onclick="fluxoClicarTeste20Paginas()">
+                            <strong>Teste</strong>
+                            <span>(20 páginas)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-vista 3: Leitor de PDF Protegido -->
+            <div id="sub-leitor" class="subview-apostila">
+                <div class="barra-controlo-pdf">
+                    <button class="btn-header-entrar" onclick="fecharLeitorPDF()">◀ Voltar</button>
+                    <div>
+                        <span id="aviso-modo-teste" style="background:var(--amarelo-botao); color:#111; padding:4px 10px; border-radius:6px; font-weight:800; font-size:12px; margin-right:12px; display:none;">TESTE GRÁTIS (20 PÁGINAS)</span>
+                        <strong>Página <span id="page-num">1</span> de <span id="page-count">119</span></strong>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-header-entrar" onclick="mudarPaginaPDF(-1)">◀ Anterior</button>
+                        <button class="btn-header-entrar" onclick="mudarPaginaPDF(1)">Próxima ▶</button>
+                    </div>
+                </div>
+                <canvas id="pdf-render" oncontextmenu="return false;"></canvas>
+            </div>
+
+        </div>
+
+        <!-- =========================================================
+             ABA 3: SIMULADOS
+             ========================================================= -->
+        <div id="simulados" class="tab-content">
+            
+            <!-- VISTA 1: LOBBY PRINCIPAL -->
+            <div id="sim-view-lobby" class="view-simulado active">
+                <div class="top-botoes-simulado" style="justify-content: flex-start; gap: 15px;">
+                    <button class="barra-novo-simulado" style="background: #EBEBEB; padding: 10px 24px;" onclick="abrirCatalogoSimulados()">
+                        NOVO SIMULADO &nbsp; <strong>+</strong>
+                    </button>
+                    <button class="btn-historico-top" style="background: #2C1F1A;" onclick="abrirTelaHistorico()">Histórico</button>
+                </div>
+                
+                <!-- Container dos Simulados Adicionados ao Perfil no Firestore -->
+                <div id="container-simulado-criado"></div>
+            </div>
+
+            <!-- VISTA 5: CATÁLOGO DE SIMULADOS DEDICADO -->
+            <div id="sim-view-catalogo" class="view-simulado">
+                <div style="margin-bottom: 20px;">
+                    <button class="btn-voltar-hist" onclick="voltarParaLobbySimulado()">← Voltar ao Lobby</button>
+                </div>
+                <input type="text" id="input-busca-catalogo-simulado" class="busca-catalogo-simulados" placeholder="Pesquise por matéria, assunto ou disciplina..." oninput="renderizarListaSimulados()">
+                <div id="grid-catalogo-simulados" style="max-width: 900px; margin: 0 auto;"></div>
+            </div>
+
+            <!-- VISTA 3: TELA DE PROVA -->
+            <div id="sim-view-prova" class="view-simulado">
+                <div class="barra-topo-prova">
+                    <div class="bloco-esquerda-prova">
+                        <img src="íconemateriabranco.png" onerror="this.onerror=null; this.src='logomateria.png';" alt="M" class="icone-m-img">
+                    </div>
+                    
+                    <div id="barra-paginacao-prova" class="lista-numeros-questoes"></div>
+                    
+                    <div class="bloco-timer-desistir">
+                        <span id="visor-relogio-prova">60:00</span>
+                        <button class="btn-desistir-red" onclick="abandonarSimulado()">Desistir</button>
+                    </div>
+                </div>
+
+                <div class="area-questao-prova">
+                    <button class="btn-nav-lateral-fixo prev" onclick="navegarQuestaoAnterior()">Anterior<br><span>◀</span></button>
+
+                    <div>
+                        <div class="cabecalho-questao-flex">
+                            <h2 id="titulo-questao-prova" style="margin: 0;">Questão 1</h2>
+                        </div>
+                        <div id="enunciado-questao-prova">Carregando questão...</div>
+                    </div>
+
+                    <div id="lista-alternativas-prova"></div>
+
+                    <button id="btn-avancar-questao" class="btn-nav-lateral-fixo next" onclick="avancarOuFinalizarSimulado()">Próximo<br><span>▶</span></button>
+                </div>
+            </div>
+            
+            <!-- VISTA 2: TELA DE HISTÓRICO SEPARADA -->
+            <div id="sim-view-historico" class="view-simulado">
+                <div class="header-historico-tela">
+                    <button class="btn-voltar-hist" onclick="voltarParaLobbySimulado()">←</button>
+                    <h1>Histórico</h1>
+                </div>
+                <div id="container-cards-historico" class="grid-historico-cards"></div>
+            </div>
+
+            <!-- VISTA 4: TELA DE RESULTADO / GABARITO -->
+            <div id="sim-view-resultado" class="view-simulado">
+                <div class="header-historico-tela">
+                    <button class="btn-voltar-hist" onclick="sairDoResultadoParaHistorico()">← Voltar</button>
+                    <h1>Resultado e Gabarito</h1>
+                </div>
+
+                <div class="painel-resultado-full">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; flex-wrap:wrap; gap:15px;">
+                        <div id="barra-blocos-resultado" class="lista-numeros-questoes" style="padding: 0; justify-content: flex-start;"></div>
+                        <div style="text-align:right;">
+                            <div style="font-size:14px; font-weight:700; opacity: 0.9;">Nota Final</div>
+                            <div id="nota-final-resultado" style="font-size:38px; font-weight:800; color: var(--dourado);">0/0</div>
+                        </div>
+                    </div>
+
+                    <div class="card-branco-revisao">
+                        <div id="revisao-questao-esquerda"></div>
+                        <div>
+                            <div id="revisao-letra-correta" style="font-weight:800; font-size:18px; text-align:center; margin-bottom:15px;">Alternativa correta: A</div>
+                            <div id="revisao-texto-justificativa" class="caixa-justificativa-marrom"></div>
+                            <button class="btn-marrom" style="width: 100%; margin-top: 20px; justify-content: center; padding: 14px; font-size: 18px;" onclick="refazerMesmoSimulado()">Refazer Simulado</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =========================================================
+             ABA 4: BIBLIOTECA
+             ========================================================= -->
+        <div id="biblioteca" class="tab-content">
+            <div id="grid-biblioteca-aluno" class="grid-3-col"></div>
+        </div>
+
+    </div>
+
+    <!-- =========================================================
+         MODAIS DA PLATAFORMA
+         ========================================================= -->
+    <!-- MODAL 1: MATÉRIA PREMIUM -->
+    <div id="modal-premium" class="modal-overlay">
+        <div class="modal-caixa-premium">
+            <button class="btn-header-entrar" style="position:absolute; top:18px; right:18px; height:32px; padding:0 12px;" onclick="fecharModal('modal-premium')">X</button>
+            
+            <div class="grid-premium-layout">
+                <div class="cartao-duplo-planos">
+                    <div class="col-plano">
+                        <h3>Free</h3>
+                        <div class="item-beneficio"><span class="quad-check verde">✔</span> Simulados gabaritados</div>
+                        <div class="item-beneficio"><span class="quad-check verde">✔</span> 1 simulado por mês</div>
+                        <div class="item-beneficio"><span class="quad-check vermelho">✖</span> Simulados personalizados</div>
+                        <div class="item-beneficio"><span class="quad-check vermelho">✖</span> Questões comentadas</div>
+                        <div class="item-beneficio"><span class="quad-check vermelho">✖</span> Acesso completo a todos os materiais da plataforma</div>
+                        <div class="item-beneficio"><span class="quad-check vermelho">✖</span> 1 Cupom de 100% off para apostila após cada renovação</div>
+                    </div>
+                    <div class="col-plano">
+                        <h3 style="font-family:'Cinzel', serif; color:#382922;">PREMIUM</h3>
+                        <div class="item-beneficio"><span class="quad-check verde">✔</span> Simulados gabaritados</div>
+                        <div class="item-beneficio"><span class="quad-check verde">✔</span> Simulados ilimitados</div>
+                        <div class="item-beneficio"><span class="quad-check verde">✔</span> Simulados personalizados</div>
+                        <div class="item-beneficio"><span class="quad-check verde">✔</span> Questões comentadas</div>
+                        <div class="item-beneficio"><span class="quad-check verde">✔</span> Acesso completo a todos os materiais da plataforma</div>
+                        <div class="item-beneficio"><span class="quad-check verde">✔</span> 1 Cupom de 100% off para apostila após cada renovação</div>
+                    </div>
+                </div>
+
+                <div class="coluna-direita-assinatura">
+                    <img src="íconemateriapremium.png" onerror="this.onerror=null; this.src='íconemateriapremium_2.png';" alt="Matéria Premium" style="max-width: 280px; width: 100%;">
+                    <div class="preco-gigante">R$ 24,<small>99</small></div>
+                    <button class="btn-dourado-assinar" onclick="abrirCheckoutPagamento('Assinatura Matéria Premium', '24,99', 'premium')">ASSINE AGORA</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: CONFIGURAR SIMULADO -->
+    <div id="modal-config-simulado" class="modal-overlay">
+        <div class="modal-marrom-padrao">
+            <button class="btn-header-entrar" style="position:absolute; top:18px; right:18px; height:32px; padding:0 12px;" onclick="fecharModal('modal-config-simulado')">X</button>
+            <h2 id="titulo-config-modal" style="text-align:center; margin:0; font-size:28px;">Simulado X</h2>
+
+            <div class="grid-modos-simulado">
+                <div class="card-branco-modo">
+                    <div>
+                        <h3>Modo Banca</h3>
+                        <p style="font-size:14px; font-weight:500;">Simula as condições reais de um concurso.</p>
+                        <ul style="font-size:14px; line-height:1.9; padding-left:20px;">
+                            <li id="txt-banca-questoes"><strong>20 Questões</strong> aleatórias</li>
+                            <li id="txt-banca-tempo">Tempo de <strong>60 min</strong></li>
+                            <li>Gabarito oculto</li>
+                        </ul>
+                    </div>
+                    <button class="btn-marrom" style="width:100%; justify-content:center; margin-top:20px;" onclick="iniciarExecucaoSimulado('banca')">INICIAR</button>
+                </div>
+
+                <div class="card-branco-modo">
+                    <div>
+                        <h3>Personalizado</h3>
+                        <label style="font-size:13px; font-weight:700; display:block; margin-bottom:5px;">Quantidade de questões</label>
+                        <input type="number" id="cfg-qtd-questoes" value="10" min="1" max="50" style="width:100%; padding:9px; border-radius:8px; border:1.5px solid var(--marrom-header); margin-bottom:14px; font-weight:700;">
+
+                        <label style="font-size:13px; font-weight:700; display:block; margin-bottom:5px;">Tempo de prova (minutos)</label>
+                        <input type="number" id="cfg-tempo-prova" value="10" min="0" style="width:100%; padding:9px; border-radius:8px; border:1.5px solid var(--marrom-header); margin-bottom:14px; font-weight:700;">
+
+                        <label style="display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:700; cursor:pointer; margin-top:8px;">
+                            <span>Gabarito instantâneo</span>
+                            <input type="checkbox" id="cfg-gabarito-imediato" checked style="width:20px; height:20px; accent-color:var(--marrom-header);">
+                        </label>
+                    </div>
+                    <button class="btn-marrom" style="width:100%; justify-content:center; margin-top:20px;" onclick="iniciarExecucaoSimulado('personalizado')">INICIAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: PAYWALL -->
+    <div id="modal-paywall" class="modal-overlay">
+        <div class="modal-marrom-padrao" style="max-width:520px; text-align:center;">
+            <button class="btn-header-entrar" style="position:absolute; top:16px; right:16px; height:30px;" onclick="fecharModal('modal-paywall')">X</button>
+            <img src="estrelas.png" alt="★" style="height:42px; margin-bottom:10px;">
+            <h2 style="margin:0 0 10px 0;">Você concluiu as 20 páginas de teste!</h2>
+            <p style="font-size:15px; opacity:0.9; line-height:1.5; margin-bottom:25px;">Para continuar a leitura das 119 páginas desta apostila, escolha como deseja desbloquear o material completo:</p>
+            
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <button class="btn-dourado-assinar" style="width:100%; border-radius:12px; font-size:16px; padding:14px;" onclick="fecharModal('modal-paywall'); abrirModal('modal-premium');">
+                    👑 Desbloquear Tudo com Matéria Premium (R$ 24,99)
+                </button>
+                <button class="btn-branco-acao" style="font-size:16px;" onclick="fecharModal('modal-paywall'); fluxoClicarLerApostila();">
+                    📘 Comprar Apenas Esta Apostila (R$ 14,99)
+                </button>
+                <button class="btn-verde-cupom" style="width:100%; height:46px; font-weight:800; font-size:15px; gap:8px;" onclick="fecharModal('modal-paywall'); fluxoUsarCupomNaApostila();">
+                    🎟️ Usar Cupom de 100% de Desconto
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: PAGAMENTO -->
+    <div id="modal-pagamento" class="modal-overlay">
+        <div class="modal-marrom-padrao" style="max-width:460px; text-align:center;">
+            <button class="btn-header-entrar" style="position:absolute; top:16px; right:16px; height:30px;" onclick="fecharModal('modal-pagamento')">X</button>
+            <h2 id="titulo-checkout-modal" style="margin:0 0 8px 0;">Pagamento</h2>
+            <p id="subtitulo-checkout-modal" style="font-size:14px; opacity:0.85; margin-bottom:20px;">Assinatura ou pagamento único</p>
+            
+            <div class="card-branco-modo" style="text-align:left; margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; font-weight:800; font-size:16px; border-bottom:1px solid #ddd; padding-bottom:10px; margin-bottom:14px;">
+                    <span id="item-checkout-nome">Apostila de Administração</span>
+                    <span id="item-checkout-valor">R$ 14,99</span>
+                </div>
+                <label style="font-size:12px; font-weight:700;">Forma de Pagamento:</label>
+                <select style="width:100%; padding:10px; border-radius:8px; border:1px solid #999; margin:6px 0 12px 0; font-weight:700;">
+                    <option>PIX (Liberação Imediata)</option>
+                    <option>Cartão de Crédito</option>
+                </select>
+            </div>
+
+            <button class="btn-dourado-assinar" style="width:100%; border-radius:12px; font-size:16px; padding:14px;" onclick="concluirPagamentoCheckout()">Confirmar Pagamento</button>
+        </div>
+    </div>
+
+    <!-- MODAL 6: AUTENTICAÇÃO GOOGLE (Corrigido sem erro de sintaxe) -->
+    <div id="modal-auth" class="modal-overlay">
+        <div class="modal-marrom-padrao" style="max-width:420px; text-align:center;">
+            <button class="btn-header-entrar" style="position:absolute; top:16px; right:16px; height:30px;" onclick="fecharModal('modal-auth')">X</button>
+            <img src="logomateria2.png" onerror="this.onerror=null; this.src='logomateria.png';" alt="Matéria" style="height:32px; margin-bottom:18px;">
+            <h3 style="margin:0 0 10px 0; font-size:22px;">Entrar na Plataforma</h3>
+            <p id="aviso-acao-pendente" style="font-size:14px; opacity:0.9; margin-bottom:24px;">Utilize a sua conta Google para sincronizar simulados, cupons e biblioteca na nuvem.</p>
+            
+            <button class="btn-branco-acao" style="display:flex; align-items:center; justify-content:center; gap:12px; font-size:16px; margin-bottom:10px;" onclick="loginComGoogle()">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="G" style="width:20px;">
+                Continuar com o Google
+            </button>
+            <button class="btn-header-entrar" style="width:100%; justify-content:center; padding:10px;" onclick="loginVisitanteRapido()">Continuar como Visitante (Nuvem)</button>
+        </div>
+    </div>
+
+    <!-- MODAIS DE CONFIRMAÇÃO DO SIMULADO -->
+    <div id="modal-confirm-add" class="modal-overlay">
+        <div class="modal-alerta-branca">
+            <h3 id="texto-confirma-add" style="white-space: pre-line;">Adicionar simulado?</h3>
+            <div class="botoes-alerta">
+                <button class="btn-texto-vermelho" onclick="fecharModal('modal-confirm-add')">NÃO</button>
+                <button class="btn-fundo-verde" onclick="confirmarAddSimulado()">SIM</button>
+            </div>
+        </div>
+    </div>
+
+<!-- MODAL DE CONFIRMAÇÃO DE USO DO CUPOM NA APOSTILA -->
+    <div id="modal-confirm-cupom-apostila" class="modal-overlay">
+        <div class="modal-alerta-branca">
+            <h3 id="texto-confirma-cupom-apostila" style="white-space: pre-line;">Deseja usar seu cupom de 100% OFF para desbloquear esta apostila?</h3>
+            <div class="botoes-alerta">
+                <button class="btn-texto-vermelho" onclick="fecharModal('modal-confirm-cupom-apostila')">NÃO</button>
+                <button class="btn-fundo-verde" onclick="confirmarResgateCupomNaApostila()">SIM, USAR CUPOM</button>
+            </div>
+        </div>
+    </div>
