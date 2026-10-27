@@ -745,11 +745,18 @@
         .modal-overlay.active { display: flex; }
 
         .modal-caixa-premium {
-            background-color: #0d0907; background-image: url('bkmateriapremium.png');
-            background-size: cover; background-position: center; border-radius: 22px;
-            max-width: 920px; width: 100%; padding: 40px; color: var(--branco);
+            background: #080605; border-radius: 22px; overflow: hidden;
+            max-width: 1100px; width: 100%; padding: 40px; color: var(--branco);
             position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
+        .modal-caixa-premium::before,
+        .modal-caixa-premium::after {
+            content: ""; position: absolute; pointer-events: none;
+            clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+            background: rgba(110, 91, 22, 0.26);
+        }
+        .modal-caixa-premium::before { width: 410px; height: 410px; right: -110px; top: -130px; }
+        .modal-caixa-premium::after { width: 250px; height: 250px; right: 55px; bottom: -125px; }
         .grid-premium-layout { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 35px; align-items: center; }
         @media (max-width: 800px) { .grid-premium-layout { grid-template-columns: 1fr; } }
 
@@ -769,7 +776,23 @@
         .quad-check.verde { background: #16C60C; }
         .quad-check.vermelho { background: #E81123; }
 
-        .coluna-direita-assinatura { text-align: center; position: relative; }
+        .coluna-direita-assinatura { text-align: center; position: relative; z-index: 1; }
+        .premium-marca {
+            color: #f7d52b; font-family: 'Cinzel', serif; line-height: .9;
+            margin: 0 auto 26px; width: max-content; max-width: 100%; position: relative;
+            text-shadow: 0 2px 14px rgba(247, 213, 43, .12);
+        }
+        .premium-marca::before,
+        .premium-marca::after {
+            content: ""; position: absolute; background: #f7d52b;
+            clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+        }
+        .premium-marca::before { width: 34px; height: 34px; left: -38px; top: -6px; }
+        .premium-marca::after { width: 18px; height: 18px; right: -23px; bottom: 3px; }
+        .premium-marca span,
+        .premium-marca strong { display: block; font-weight: 700; }
+        .premium-marca span { font-size: clamp(35px, 4vw, 54px); letter-spacing: -2px; }
+        .premium-marca strong { font-size: clamp(28px, 3.3vw, 45px); letter-spacing: 1px; }
         .preco-gigante { font-size: 54px; font-weight: 800; margin: 20px 0; }
         .preco-gigante small { font-size: 32px; }
         .btn-dourado-assinar {
@@ -777,6 +800,13 @@
             border-radius: 30px; font-size: 20px; font-weight: 800; cursor: pointer; transition: transform 0.2s;
         }
         .btn-dourado-assinar:hover { transform: scale(1.04); }
+
+        @media (max-width: 800px) {
+            .modal-caixa-premium { padding: 62px 22px 28px; max-height: calc(100vh - 24px); overflow-y: auto; }
+            .cartao-duplo-planos { grid-template-columns: 1fr; }
+            .col-plano:first-child { border-right: 0; border-bottom: 1px solid #ccc; }
+            .premium-marca { margin-top: 12px; }
+        }
 
         .modal-marrom-padrao {
             background-color: var(--marrom-header); color: var(--branco);

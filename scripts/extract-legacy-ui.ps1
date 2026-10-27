@@ -45,7 +45,21 @@ $assetReplacements = @{
 foreach ($entry in $assetReplacements.GetEnumerator()) {
     $portalHtml = $portalHtml.Replace($entry.Key, $entry.Value)
 }
+$premiumLogoPattern = '<img src="/assets/premium\.png"[^>]*style="max-width: 280px; width: 100%;"[^>]*>'
+$premiumLogoMarkup = @'
+<div class="premium-marca" aria-label="Matéria Premium">
+    <span>MATÉRIA</span>
+    <strong>PREMIUM</strong>
+</div>
+'@
+$portalHtml = [regex]::Replace($portalHtml, $premiumLogoPattern, $premiumLogoMarkup.Trim())
 [System.IO.File]::WriteAllText($portalHtmlPath, $portalHtml, $utf8)
+
+$portalCssPath = Join-Path $targetRoot 'portal.css'
+$premiumCssPath = Join-Path $PSScriptRoot 'legacy-overrides\portal-premium.css'
+$portalCss = [System.IO.File]::ReadAllText($portalCssPath)
+$premiumCss = [System.IO.File]::ReadAllText($premiumCssPath)
+[System.IO.File]::WriteAllText($portalCssPath, "$portalCss`r`n`r`n/* Ajustes atuais do modal premium */`r`n$premiumCss", $utf8)
 
 # O servidor atual do PDF não libera CORS para localhost. Esta adaptação usa
 # o proxy do Vite apenas no desenvolvimento e mantém a URL original em produção.
