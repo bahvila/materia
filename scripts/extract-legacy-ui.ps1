@@ -34,7 +34,7 @@ Export-LegacyPage -Source (Join-Path $sourceRoot 'paineldecontrole.html') -Name 
 $portalHtmlPath = Join-Path $targetRoot 'portal.html'
 $portalHtml = [System.IO.File]::ReadAllText($portalHtmlPath)
 $assetReplacements = @{
-    'logomateria1.png' = '/assets/logo-materia.png'
+    'logomateria1.png' = '/assets/íconemateriamarrom.png'
     'logomateria2.png' = '/assets/logo-materia.png'
     'íconemateriabranco.png' = '/assets/logo-materia.png'
     'íconemateriapremium.png' = '/assets/premium.png'
@@ -46,12 +46,7 @@ foreach ($entry in $assetReplacements.GetEnumerator()) {
     $portalHtml = $portalHtml.Replace($entry.Key, $entry.Value)
 }
 $premiumLogoPattern = '<img src="/assets/premium\.png"[^>]*style="max-width: 280px; width: 100%;"[^>]*>'
-$premiumLogoMarkup = @'
-<div class="premium-marca" aria-label="Matéria Premium">
-    <span>MATÉRIA</span>
-    <strong>PREMIUM</strong>
-</div>
-'@
+$premiumLogoMarkup = '<img class="premium-marca-imagem" src="/assets/íconemateriapremium.png" alt="Matéria Premium">'
 $portalHtml = [regex]::Replace($portalHtml, $premiumLogoPattern, $premiumLogoMarkup.Trim())
 [System.IO.File]::WriteAllText($portalHtmlPath, $portalHtml, $utf8)
 
@@ -80,4 +75,7 @@ $adaptedPdfBlock = @'
             }
 '@
 $portalScript = $portalScript.Replace($originalPdfLine, $adaptedPdfBlock.TrimEnd())
+$routingScriptPath = Join-Path $PSScriptRoot 'legacy-overrides\\portal-routing.js'
+$routingScript = [System.IO.File]::ReadAllText($routingScriptPath)
+$portalScript = "$portalScript`r`n`r`n$routingScript"
 [System.IO.File]::WriteAllText($portalScriptPath, $portalScript, $utf8)

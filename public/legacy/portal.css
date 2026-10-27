@@ -31,7 +31,7 @@
             z-index: 150;
         }
         .header-left { display: flex; align-items: center; gap: 38px; }
-        .logo-header { height: 28px; cursor: pointer; display: block; }
+        .logo-header { height: 44px; width: 44px; object-fit: contain; cursor: pointer; display: block; }
         
         nav { display: flex; gap: 10px; }
         .nav-btn {
@@ -777,22 +777,10 @@
         .quad-check.vermelho { background: #E81123; }
 
         .coluna-direita-assinatura { text-align: center; position: relative; z-index: 1; }
-        .premium-marca {
-            color: #f7d52b; font-family: 'Cinzel', serif; line-height: .9;
-            margin: 0 auto 26px; width: max-content; max-width: 100%; position: relative;
-            text-shadow: 0 2px 14px rgba(247, 213, 43, .12);
+        .premium-marca-imagem {
+            display: block; width: min(100%, 390px); height: auto;
+            margin: 0 auto 24px; object-fit: contain;
         }
-        .premium-marca::before,
-        .premium-marca::after {
-            content: ""; position: absolute; background: #f7d52b;
-            clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
-        }
-        .premium-marca::before { width: 34px; height: 34px; left: -38px; top: -6px; }
-        .premium-marca::after { width: 18px; height: 18px; right: -23px; bottom: 3px; }
-        .premium-marca span,
-        .premium-marca strong { display: block; font-weight: 700; }
-        .premium-marca span { font-size: clamp(35px, 4vw, 54px); letter-spacing: -2px; }
-        .premium-marca strong { font-size: clamp(28px, 3.3vw, 45px); letter-spacing: 1px; }
         .preco-gigante { font-size: 54px; font-weight: 800; margin: 20px 0; }
         .preco-gigante small { font-size: 32px; }
         .btn-dourado-assinar {
@@ -805,7 +793,7 @@
             .modal-caixa-premium { padding: 62px 22px 28px; max-height: calc(100vh - 24px); overflow-y: auto; }
             .cartao-duplo-planos { grid-template-columns: 1fr; }
             .col-plano:first-child { border-right: 0; border-bottom: 1px solid #ccc; }
-            .premium-marca { margin-top: 12px; }
+            .premium-marca-imagem { width: min(100%, 340px); margin-top: 12px; }
         }
 
         .modal-marrom-padrao {
