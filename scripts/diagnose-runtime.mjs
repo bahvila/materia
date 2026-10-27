@@ -18,6 +18,8 @@ const targetUrl = process.argv[2] || 'http://localhost:5173'
 await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 10_000 })
 await page.waitForTimeout(4_000)
 console.log(`title: ${await page.title()}`)
+console.log(`path: ${new URL(page.url()).pathname}`)
+console.log(`active-tab: ${await page.locator('.tab-content.active').getAttribute('id')}`)
 console.log(`root: ${(await page.locator('#root').innerText()).slice(0, 300)}`)
 const apostilaCards = page.locator('#grid-catalogo-apostilas .card-apostila')
 const apostilaCount = await apostilaCards.count()

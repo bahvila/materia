@@ -1,5 +1,23 @@
 .logo-header { height: 44px; width: 44px; object-fit: contain; }
 
+.search-row-home button {
+    box-shadow: 0 4px 10px rgba(70, 53, 46, 0.18);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+.search-row-home button:hover {
+    background-color: var(--marrom-escuro);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(70, 53, 46, 0.28);
+}
+.search-row-home button:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 3px 8px rgba(70, 53, 46, 0.22);
+}
+.search-row-home button:focus-visible {
+    outline: 3px solid rgba(245, 184, 46, 0.55);
+    outline-offset: 3px;
+}
+
 .modal-caixa-premium {
     background: #080605; border-radius: 22px; overflow: hidden;
     max-width: 1100px; width: 100%; padding: 40px; color: var(--branco);
@@ -18,6 +36,21 @@
     display: block; width: min(100%, 390px); height: auto;
     margin: 0 auto 24px; object-fit: contain;
 }
+.modal-field-label { font-size: 13px; font-weight: 700; display: block; margin-bottom: 5px; }
+.modal-number-input { width: 100%; padding: 9px; border-radius: 8px; border: 1.5px solid var(--marrom-header); margin-bottom: 14px; font-weight: 700; }
+.modal-checkbox-label { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+.modal-checkbox-label input { width: 20px; height: 20px; accent-color: var(--marrom-header); }
+.modal-centered { text-align: center; }
+.modal-narrow { max-width: 520px; }
+.modal-payment { max-width: 460px; }
+.modal-auth { max-width: 420px; }
+.modal-action-stack { display: flex; flex-direction: column; gap: 12px; }
+.modal-full-action { width: 100%; border-radius: 12px; font-size: 16px; padding: 14px; }
+.checkout-summary { display: flex; justify-content: space-between; font-weight: 800; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 14px; }
+.checkout-label { font-size: 12px; font-weight: 700; }
+.checkout-select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #999; margin: 6px 0 12px; font-weight: 700; }
+.google-login-button { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 16px; margin-bottom: 10px; }
+.google-login-button img { width: 20px; }
 @media (max-width: 800px) {
     .modal-caixa-premium { padding: 62px 22px 28px; max-height: calc(100vh - 24px); overflow-y: auto; }
     .cartao-duplo-planos { grid-template-columns: 1fr; }

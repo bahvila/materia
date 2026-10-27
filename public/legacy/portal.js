@@ -1187,7 +1187,7 @@ let aguardandoEscolherApostilaParaCupom = false;
         });
         // Navegação persistente entre as páginas principais
         const rotasPorSeparador = {
-            inicio: '/',
+            inicio: '/inicio',
             apostila: '/apostila',
             simulados: '/simulados',
             biblioteca: '/biblioteca'
@@ -1231,4 +1231,8 @@ let aguardandoEscolherApostilaParaCupom = false;
             window.mudarSeparador(separadorDaUrl(), false);
         });
 
-        window.mudarSeparador(separadorDaUrl(), false);
+        const separadorInicial = separadorDaUrl();
+        window.mudarSeparador(separadorInicial, false);
+        if (window.location.pathname !== rotasPorSeparador[separadorInicial]) {
+            window.history.replaceState({ separador: separadorInicial }, '', rotasPorSeparador[separadorInicial]);
+        }
