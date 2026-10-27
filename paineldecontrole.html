@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gerenciamento - Matéria Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
+    <!-- PAPAPARSE (Importador CSV) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style>
+        :root {
+            --bg-creme: #FAF8F5;
+            --marrom-header: #46352E;
+            --marrom-escuro: #2C1F1A;
+            --cinza-painel: #EBEBEB;
+            --verde-cupom: #2E6F40;
+            --dourado: #F5B82E;
+            --branco: #FFFFFF;
+        }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { margin: 0; background-color: var(--bg-creme); color: var(--marrom-escuro); padding: 30px; }
+        
+        .container-admin { max-width: 1000px; margin: 0 auto; }
+        h1 { font-size: 32px; font-weight: 800; margin-bottom: 25px; color: var(--marrom-header); }
+        
+        .grid-admin { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        @media(max-width: 800px) { .grid-admin { grid-template-columns: 1fr; } }
+
+        .card-admin {
+            background: var(--branco); border-radius: 16px; padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #DCDCDC;
+        }
+        .card-admin h3 { margin-top: 0; font-size: 20px; font-weight: 800; color: var(--marrom-header); border-bottom: 2px solid var(--cinza-painel); padding-bottom: 10px; }
+        
+        label { display: block; font-size: 13px; font-weight: 700; margin: 12px 0 4px 0; }
+        input, textarea, select {
+            width: 100%; padding: 10px 14px; border-radius: 8px; border: 1.5px solid #ccc; font-size: 14px; outline: none;
+        }
+        input:focus, textarea:focus { border-color: var(--marrom-header); }
+        
+        .btn-marrom {
+            background-color: var(--marrom-header); color: var(--branco); border: none;
+            padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: 15px;
+            cursor: pointer; width: 100%; margin-top: 18px; transition: 0.2s;
+        }
+        .btn-marrom:hover { filter: brightness(1.1); }
+        .status-msg { font-size: 13px; font-weight: 700; margin-top: 10px; color: var(--verde-cupom); }
+    </style>
+</head>
+<body>
+
+    <div class="container-admin">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:25px; background:#fff; padding:16px 22px; border-radius:14px; border:1px solid #DCDCDC; box-shadow:0 4px 14px rgba(0,0,0,0.04);">
+            <h1 style="margin:0; font-size:26px;">⚙️ Painel de Controle - Matéria Admin</h1>
+            
+            <!-- Formulário de Login (quando desconectado) -->
+            <div id="box-login-admin" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <input type="email" id="adm-login-email" value="admin@materiaedu.com" placeholder="E-mail Admin" style="width:210px; padding:8px 12px; font-size:13px;">
+                <input type="password" id="adm-login-senha" placeholder="Senha" style="width:150px; padding:8px 12px; font-size:13px;">
+                <button onclick="fazerLoginAdmin()" style="background:var(--verde-cupom); color:#fff; border:none; padding:9px 16px; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px;">🔒 Entrar</button>
+            </div>
+
+            <!-- Status Logado (quando autenticado) -->
+            <div id="box-logado-admin" style="display:none; gap:12px; align-items:center;">
+                <span style="font-size:13px; font-weight:800; color:var(--verde-cupom);">● Admin Autenticado: <span id="label-email-admin"></span></span>
+                <button onclick="fazerLogoutAdmin()" style="background:#C9302C; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; cursor:pointer; font-size:12px;">Sair</button>
+            </div>
+        </div>
+
+        <div class="grid-admin">
+            
+            <!-- CAIXA 1: CADASTRAR APOSTILA -->
+            <div class="card-admin">
+                <h3>📚 Publicar Nova Apostila</h3>
+                <label>Título:</label>
+                <input type="text" id="adm-ap-titulo" placeholder="Ex: Direito Constitucional">
+                
+                <label>Subtítulo:</label>
+                <input type="text" id="adm-ap-sub" placeholder="Ex: Teoria e Questões Comentadas">
+                
+                <label>Preço (R$):</label>
+                <input type="text" id="adm-ap-preco" value="14,99">
+                
+                <label>Link da Capa (Cloudflare R2 ou URL):</label>
+                <input type="text" id="adm-ap-capa" placeholder="https://cdn.materiaedu.com/...">
+                
+                <label>Link do PDF (Cloudflare R2 ou URL):</label>
+                <input type="text" id="adm-ap-pdf" placeholder="https://...">
+                
+                <label>Descrição Completa (HTML):</label>
+                <textarea id="adm-ap-desc" rows="3" placeholder="<p>Seja bem-vindo...</p>"></textarea>
+
+                <button class="btn-marrom" onclick="salvarApostila()">Publicar Apostila</button>
+                <div id="status-ap" class="status-msg"></div>
+            </div>
+
+<!-- CAIXA 2: CONFIGURAR SIMULADO VISÍVEL E FILTROS (COLUNAS 8 A 14) -->
+            <div class="card-admin">
+                <h3>🎯 Configurar Simulado Visível</h3>
+                
+                <label>ID da Coleção no Banco (começando com simulado-):</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="adm-sim-id" value="simulado-anac-comissario-de-voo" placeholder="Ex: simulado-enfermagem">
+                    <button type="button" onclick="inspecionarColecaoSimulado()" style="background:var(--marrom-escuro); color:#fff; border:none; border-radius:8px; padding:0 14px; cursor:pointer; font-weight:700; font-size:12px; white-space:nowrap;">🔍 Ler Coleção</button>
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label>Texto Visível (Título Principal):</label>
+                        <input type="text" id="adm-sim-titulo" placeholder="Ex: Enfermagem">
+                    </div>
+                    <div>
+                        <label>Descrição (Texto embaixo):</label>
+                        <input type="text" id="adm-sim-desc" placeholder="Ex: Anatomia Sistêmica">
+                    </div>
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:10px;">
+                    <div>
+                        <label>Link da Capa (Cloudflare R2):</label>
+                        <input type="text" id="adm-sim-capa" placeholder="https://cdn.materiaedu.com/...">
+                    </div>
+                    <div>
+                        <label>Qtd. Banca:</label>
+                        <input type="number" id="adm-sim-qtd" value="20">
+                    </div>
+                    <div>
+                        <label>Tempo (min):</label>
+                        <input type="number" id="adm-sim-tempo" value="60">
+                    </div>
+                </div>
+
+                <!-- FILTRO PELAS COLUNAS 8 A 14 DO BANCO -->
+                <div style="background:var(--bg-creme); border:1px solid #ddd; border-radius:10px; padding:12px; margin-top:14px;">
+                    <label style="margin-top:0; color:var(--marrom-header);">🌪️ Filtrar questões desta coleção pelas Colunas 8 a 14 (Opcional):</label>
+                    <p style="font-size:11px; color:#666; margin:2px 0 10px 0;">Clique em "🔍 Ler Coleção" acima para carregar automaticamente os valores existentes no banco.</p>
+                    
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                        <div>
+                            <label style="margin-top:2px; font-size:11px;">[8] Dificuldade:</label>
+                            <select id="filtro-col-dificuldade"><option value="">Todas</option></select>
+                        </div>
+                        <div>
+                            <label style="margin-top:2px; font-size:11px;">[9] Assunto:</label>
+                            <select id="filtro-col-assunto"><option value="">Todos</option></select>
+                        </div>
+                        <div>
+                            <label style="margin-top:2px; font-size:11px;">[10] Subseção:</label>
+                            <select id="filtro-col-subsecao"><option value="">Todas</option></select>
+                        </div>
+                        <div>
+                            <label style="margin-top:2px; font-size:11px;">[11] Seção:</label>
+                            <select id="filtro-col-secao"><option value="">Todas</option></select>
+                        </div>
+                        <div>
+                            <label style="margin-top:2px; font-size:11px;">[12] Capítulo:</label>
+                            <select id="filtro-col-capitulo"><option value="">Todos</option></select>
+                        </div>
+                        <div>
+                            <label style="margin-top:2px; font-size:11px;">[13] Módulo:</label>
+                            <select id="filtro-col-modulo"><option value="">Todos</option></select>
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label style="margin-top:2px; font-size:11px;">[14] Bloco:</label>
+                            <select id="filtro-col-bloco"><option value="">Todos</option></select>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-marrom" onclick="salvarConfigSimulado()">Salvar e Publicar Simulado</button>
+                <div id="status-sim" class="status-msg"></div>
+            </div>
+        <!-- CAIXA 3: IMPORTADOR DE QUESTÕES CSV COM 14 COLUNAS -->
+        <div class="card-admin" style="margin-top: 25px;">
+            <h3>📥 Importador de Questões (CSV - 14 Colunas)</h3>
+            <p style="font-size: 13px; color: #555; line-height: 1.5;">
+                O arquivo CSV deve seguir a ordem exata das 14 colunas:<br>
+                <strong>[0] Enunciado | [1] Alternativa Correta | [2] Incorreta_1 | [3] Incorreta_2 | [4] Incorreta_3 | [5] Incorreta_4 | [6] Explicação | [7] Dificuldade | [8] Assunto | [9] Subseção | [10] Seção | [11] Capítulo | [12] Módulo | [13] Bloco</strong>
+            </p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 15px; align-items: center;">
+                <div>
+                    <label>ID do Simulado Alvo:</label>
+                    <input type="text" id="adm-csv-simid" value="anac-piloto-privado">
+                </div>
+                <div>
+                    <label>Codificação do CSV:</label>
+                    <select id="adm-csv-encoding">
+                        <option value="UTF-8">UTF-8 (Padrão Moderno / Excel recente)</option>
+                        <option value="ISO-8859-1">ISO-8859-1 (Excel Antigo / ANSI)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Arquivo CSV:</label>
+                    <input type="file" id="adm-sim-csv" accept=".csv" style="padding: 7px;">
+                </div>
+            </div>
+
+            <button class="btn-marrom" style="max-width: 300px;" onclick="importarPlanilhaCSV()">Processar e Enviar Questões</button>
+            <div id="status-importacao-csv" class="status-msg"></div>
+
+                        <!-- CAIXA 4: GERENCIADOR DE ITENS PUBLICADOS NO SITE -->
+
+            <div class="card-admin" style="margin-top: 25px;">
+                <h3>🎟️ Criar Novo Cupom</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label>Código (Máx 10 alfanumérico):</label>
+                        <input type="text" id="adm-cupom-codigo" maxlength="10" placeholder="Ex: ANAC50" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()">
+                    </div>
+                    <div>
+                        <label>Tipo de Benefício:</label>
+                        <select id="adm-cupom-tipo" onchange="alternarCamposTipoCupomAdmin()">
+                            <option value="premium">👑 Desbloquear Matéria Premium</option>
+                            <option value="apostila">📘 Desconto em Apostila (%)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Limite Máx. de Usuários (Opcional):</label>
+                        <input type="number" id="adm-cupom-limite" min="1" placeholder="Vazio = Ilimitado">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px;">
+                    <div>
+                        <label>⏳ Cronômetro 1: Expira em quantos dias após criado? (Opcional):</label>
+                        <input type="number" id="adm-cupom-cron1" min="1" placeholder="Vazio = Sem prazo para expirar">
+                    </div>
+
+                    <!-- Campo dinâmico: Cronômetro 2 (Premium) OU % de Desconto (Apostila) -->
+                    <div id="box-adm-cupom-cron2">
+                        <label>⚡ Cronômetro 2: Dias de Premium após ativar (Opcional):</label>
+                        <input type="number" id="adm-cupom-cron2" min="1" placeholder="Vazio = Premium Permanente">
+                    </div>
+
+                    <div id="box-adm-cupom-porcentagem" style="display: none;">
+                        <label>🏷️ Porcentagem de Desconto na Apostila (1 a 100%):</label>
+                        <input type="number" id="adm-cupom-desconto" min="1" max="100" value="100">
+                    </div>
+                </div>
+
+                <button class="btn-marrom" style="max-width: 300px;" onclick="salvarCupomAdmin()">Criar Cupom na Nuvem</button>
+                <div id="status-cupom-admin" class="status-msg"></div>
+            </div>
+
+            <!-- CAIXA 5: GERENCIADOR DE ITENS PUBLICADOS NO SITE -->
+            <div class="card-admin" style="margin-top: 25px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid var(--cinza-painel); padding-bottom: 10px; margin-bottom: 15px;">
+                    <h3 style="margin:0; border:none; padding:0;">👁️ Gerenciar Itens Visíveis e Cupons</h3>
+                    <button onclick="carregarListasAdmin()" style="background:var(--marrom-header); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:700; font-size:13px;">🔄 Atualizar Lista</button>
+                </div>
+
+                <div class="grid-admin">
+                    <div>
+                        <h4 style="margin: 0 0 10px 0; color: var(--marrom-header);">📚 Apostilas no Banco</h4>
+                        <div id="lista-admin-apostilas" style="font-size: 13px;">Carregando...</div>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0 0 10px 0; color: var(--marrom-header);">🎯 Simulados no Banco</h4>
+                        <div id="lista-admin-simulados" style="font-size: 13px;">Carregando...</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 22px; border-top: 2px solid var(--cinza-painel); padding-top: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--marrom-header);">🎟️ Cupons Cadastrados</h4>
+                    <div id="lista-admin-cupons" style="font-size: 13px;">Carregando...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Configuração do Firebase (Projeto: materia-education)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwRtHKkNuNfgeCGL017GaOaOPg45KCPe8",
+            authDomain: "materia-education.firebaseapp.com",
+            projectId: "materia-education",
+            storageBucket: "materia-education.firebasestorage.app",
+            messagingSenderId: "110589682387",
+            appId: "1:110589682387:web:c047eccea25d1aaaf82a26",
+            measurementId: "G-21WCF5GPM6"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        function fazerLoginAdmin() {
+            const email = document.getElementById('adm-login-email').value.trim();
+            const senha = document.getElementById('adm-login-senha').value;
+            if (!email || !senha) {
+                alert("Preencha o e-mail e a senha de administrador.");
+                return;
+            }
+            auth.signInWithEmailAndPassword(email, senha)
+                .then(() => {
+                    document.getElementById('adm-login-senha').value = "";
+                })
+                .catch(err => {
+                    alert("Erro ao autenticar: verifique seu e-mail e senha no Firebase Authentication.\n\nDetalhe: " + err.message);
+                });
+        }
+
+        function fazerLogoutAdmin() {
+            auth.signOut();
+        }
+
+        auth.onAuthStateChanged(user => {
+            const boxLogin = document.getElementById('box-login-admin');
+            const boxLogado = document.getElementById('box-logado-admin');
+            if (user) {
+                boxLogin.style.display = 'none';
+                boxLogado.style.display = 'flex';
+                document.getElementById('label-email-admin').innerText = user.email;
+                carregarListasAdmin();
+                carregarCuponsNoAdmin();
+            } else {
+                boxLogin.style.display = 'flex';
+                boxLogado.style.display = 'none';
+            }
+        });
+
+        async function salvarApostila() {
+            const nova = {
+                titulo: document.getElementById('adm-ap-titulo').value.trim(),
+                subtitulo: document.getElementById('adm-ap-sub').value.trim(),
+                preco: document.getElementById('adm-ap-preco').value.trim(),
+                capaUrl: document.getElementById('adm-ap-capa').value.trim(),
+                pdfUrl: document.getElementById('adm-ap-pdf').value.trim(),
+                descricao: document.getElementById('adm-ap-desc').value.trim(),
+                ano: "2026",
+                ativo: true
+            };
+            if (!nova.titulo) { alert("Preencha o título."); return; }
+
+            try {
+                await db.collection("apostilas").add(nova);
+                document.getElementById('status-ap').innerText = "✅ Apostila publicada com sucesso!";
+                carregarListasAdmin();
+            } catch (e) {
+                alert("Erro ao salvar: " + e.message);
+            }
+        }
+
+const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitulo', 'modulo', 'bloco'];
+
+        // Extrai um nome limpo caso comece com "simulado-" (Ex: "simulado-anac-comissario" -> "Anac Comissario")
+        function formatarSufixoSimulado(idColecao) {
+            let limpo = idColecao.replace(/^simulado[-_]?/i, '');
+            return limpo.split(/[-_]/).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+        }
+
+        // Lê a coleção "simulado-..." no Firestore e preenche as opções das colunas 8 a 14
+        async function inspecionarColecaoSimulado(idOpcional, filtrosSalvos = {}) {
+            const idInput = document.getElementById('adm-sim-id');
+            if (idOpcional) idInput.value = idOpcional;
+            const colId = idInput.value.trim();
+            const status = document.getElementById('status-sim');
+
+            if (!colId) { alert("Digite o ID da coleção (ex: simulado-anac-comissario-de-voo)."); return; }
+
+            status.innerText = `🔄 Lendo questões da coleção '${colId}'...`;
+            try {
+                const snap = await db.collection(colId).get();
+                if (snap.empty) {
+                    status.innerText = `⚠️ Nenhuma questão encontrada na coleção '${colId}'. Verifique se digitou o nome exato.`;
+                    return;
+                }
+
+                // Coleta valores únicos das colunas 8 a 14
+                const valoresUnicos = {};
+                camposTaxonomia.forEach(c => valoresUnicos[c] = new Set());
+
+                snap.docs.forEach(doc => {
+                    const d = doc.data();
+                    camposTaxonomia.forEach(c => {
+                        if (d[c] && String(d[c]).trim() !== "") {
+                            valoresUnicos[c].add(String(d[c]).trim());
+                        }
+                    });
+                });
+
+                // Popula os <select>
+                camposTaxonomia.forEach(c => {
+                    const sel = document.getElementById(`filtro-col-${c}`);
+                    const valorAtual = filtrosSalvos[c] || "";
+                    const opcoes = Array.from(valoresUnicos[c]).sort();
+                    sel.innerHTML = `<option value="">Todos (${opcoes.length} opções)</option>` +
+                        opcoes.map(v => `<option value="${v}" ${v === valorAtual ? 'selected' : ''}>${v}</option>`).join('');
+                });
+
+                // Se os campos de Título estiverem vazios, sugere automaticamente a partir do nome depois de "simulado-"
+                if (!document.getElementById('adm-sim-titulo').value.trim()) {
+                    document.getElementById('adm-sim-titulo').value = formatarSufixoSimulado(colId);
+                }
+
+                // Se essa coleção ainda não estava listada em simulados_info, registra automaticamente!
+                const infoDoc = await db.collection("simulados_info").doc(colId).get();
+                if (!infoDoc.exists) {
+                    await db.collection("simulados_info").doc(colId).set({
+                        id: colId,
+                        colecaoQuestoes: colId,
+                        tituloVisivel: document.getElementById('adm-sim-titulo').value.trim() || formatarSufixoSimulado(colId),
+                        descricaoVisivel: document.getElementById('adm-sim-desc').value.trim() || "Simulado Geral",
+                        nome: `${document.getElementById('adm-sim-titulo').value.trim() || formatarSufixoSimulado(colId)}: Geral`,
+                        questoes_banca: 20,
+                        tempo_banca: 60,
+                        filtros: {},
+                        ativo: true
+                    }, { merge: true });
+                    carregarListasAdmin();
+                }
+
+                status.innerText = `✅ ${snap.size} questões encontradas em '${colId}'! Filtros das colunas 8 a 14 carregados.`;
+            } catch (e) {
+                alert("Erro ao ler coleção: " + e.message);
+            }
+        }
+
+        async function salvarConfigSimulado() {
+            const id = document.getElementById('adm-sim-id').value.trim();
+            const tituloVisivel = document.getElementById('adm-sim-titulo').value.trim();
+            const descricaoVisivel = document.getElementById('adm-sim-desc').value.trim();
+            const capaUrl = document.getElementById('adm-sim-capa').value.trim();
+            const qtd = parseInt(document.getElementById('adm-sim-qtd').value) || 20;
+            const tempo = parseInt(document.getElementById('adm-sim-tempo').value) || 60;
+
+            if (!id || !tituloVisivel) {
+                alert("Preencha o ID da coleção e o Texto Visível (Título Principal).");
+                return;
+            }
+
+            // Captura os filtros escolhidos nas colunas 8 a 14
+            const filtros = {};
+            camposTaxonomia.forEach(c => {
+                const val = document.getElementById(`filtro-col-${c}`).value.trim();
+                if (val !== "") filtros[c] = val;
+            });
+
+            try {
+                await db.collection("simulados_info").doc(id).set({
+                    id,
+                    colecaoQuestoes: id,
+                    tituloVisivel,
+                    descricaoVisivel,
+                    nome: descricaoVisivel ? `${tituloVisivel}: ${descricaoVisivel}` : tituloVisivel,
+                    capaUrl,
+                    questoes_banca: qtd,
+                    tempo_banca: tempo,
+                    filtros,
+                    ativo: true
+                }, { merge: true });
+
+                document.getElementById('status-sim').innerText = "✅ Simulado configurado e atualizado no site!";
+                carregarListasAdmin();
+            } catch (e) {
+                alert("Erro ao salvar simulado: " + e.message);
+            }
+        }
+
+        async function editarSimuladoNaCaixa(docId) {
+            const doc = await db.collection("simulados_info").doc(docId).get();
+            if (!doc.exists) return;
+            const d = doc.data();
+
+            document.getElementById('adm-sim-id').value = doc.id;
+            document.getElementById('adm-sim-titulo').value = d.tituloVisivel || (d.nome ? d.nome.split(':')[0].trim() : formatarSufixoSimulado(doc.id));
+            document.getElementById('adm-sim-desc').value = d.descricaoVisivel || (d.nome && d.nome.includes(':') ? d.nome.split(':').slice(1).join(':').trim() : "");
+            document.getElementById('adm-sim-capa').value = d.capaUrl || "";
+            document.getElementById('adm-sim-qtd').value = d.questoes_banca || 20;
+            document.getElementById('adm-sim-tempo').value = d.tempo_banca || 60;
+
+            await inspecionarColecaoSimulado(doc.id, d.filtros || {});
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function carregarListasAdmin() {
+            const divAp = document.getElementById('lista-admin-apostilas');
+            const divSim = document.getElementById('lista-admin-simulados');
+
+            // 1. Listar Apostilas
+            const snapAp = await db.collection("apostilas").get();
+            if (snapAp.empty) {
+                divAp.innerHTML = "<p style='color:#777;'>Nenhuma apostila cadastrada.</p>";
+            } else {
+                divAp.innerHTML = snapAp.docs.map(doc => {
+                    const d = doc.data();
+                    const visivel = d.ativo !== false;
+                    return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px; background:${visivel ? '#fff' : '#f5f5f5'};">
+                        <div>
+                            <strong>${d.titulo}</strong><br>
+                            <span style="font-size:11px; color:${visivel ? '#2E6F40' : '#C9302C'}; font-weight:700;">
+                                ${visivel ? '● Visível no Site' : '○ Oculto no Site'}
+                            </span>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="alternarVisibilidade('apostilas', '${doc.id}', ${visivel})" style="padding:6px 10px; border-radius:6px; border:1px solid #888; cursor:pointer; font-weight:700; font-size:12px;">
+                                ${visivel ? 'Ocultar' : 'Mostrar'}
+                            </button>
+                            <button onclick="excluirItemBanco('apostilas', '${doc.id}')" style="padding:6px 10px; border-radius:6px; border:none; background:#C9302C; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // 2. Listar Simulados (Mostrando nome sem o prefixo "simulado-", Título, Descrição e Filtros ativos)
+            const snapSim = await db.collection("simulados_info").get();
+            if (snapSim.empty) {
+                divSim.innerHTML = "<p style='color:#777;'>Nenhum simulado registrado ainda. Digite o ID 'simulado-...' na Caixa 2 e clique em '🔍 Ler Coleção'.</p>";
+            } else {
+                divSim.innerHTML = snapSim.docs.map(doc => {
+                    const d = doc.data();
+                    const visivel = d.ativo !== false;
+                    const sufixoColecao = doc.id.replace(/^simulado[-_]?/i, '');
+                    const titulo = d.tituloVisivel || d.nome || sufixoColecao;
+                    const desc = d.descricaoVisivel || "";
+                    const filtrosAtivos = d.filtros ? Object.entries(d.filtros).map(([k, v]) => `${k}: ${v}`).join(' | ') : '';
+
+                    return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px; background:${visivel ? '#fff' : '#f5f5f5'};">
+                        <div>
+                            <span style="font-size:10px; background:#EBEBEB; padding:2px 6px; border-radius:4px; font-weight:700;">Coleção: ${sufixoColecao}</span><br>
+                            <strong style="font-size:15px;">${titulo}</strong> ${desc ? `<span style="color:#555;">— ${desc}</span>` : ''}<br>
+                            ${filtrosAtivos ? `<span style="font-size:11px; color:#46352E; font-weight:600;">🌪️ Filtro: ${filtrosAtivos}</span><br>` : ''}
+                            <span style="font-size:11px; color:${visivel ? '#2E6F40' : '#C9302C'}; font-weight:700;">
+                                ${visivel ? '● Visível no Site' : '○ Oculto no Site'}
+                            </span>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="editarSimuladoNaCaixa('${doc.id}')" style="padding:6px 10px; border-radius:6px; border:1px solid var(--marrom-header); background:#fff; color:var(--marrom-header); cursor:pointer; font-weight:700; font-size:12px;">
+                                ⚙️ Configurar
+                            </button>
+                            <button onclick="alternarVisibilidade('simulados_info', '${doc.id}', ${visivel})" style="padding:6px 10px; border-radius:6px; border:1px solid #888; cursor:pointer; font-weight:700; font-size:12px;">
+                                ${visivel ? 'Ocultar' : 'Mostrar'}
+                            </button>
+                            <button onclick="excluirItemBanco('simulados_info', '${doc.id}')" style="padding:6px 10px; border-radius:6px; border:none; background:#C9302C; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        async function alternarVisibilidade(colecao, docId, estadoAtual) {
+            await db.collection(colecao).doc(docId).update({ ativo: !estadoAtual });
+            carregarListasAdmin();
+        }
+
+        async function excluirItemBanco(colecao, docId) {
+            if (!confirm(`Tem certeza que deseja excluir o item '${docId}' da vitrine do site?`)) return;
+            await db.collection(colecao).doc(docId).delete();
+            carregarListasAdmin();
+        }
+
+function alternarCamposTipoCupomAdmin() {
+            const tipo = document.getElementById('adm-cupom-tipo').value;
+            document.getElementById('box-adm-cupom-cron2').style.display = (tipo === 'premium') ? 'block' : 'none';
+            document.getElementById('box-adm-cupom-porcentagem').style.display = (tipo === 'apostila') ? 'block' : 'none';
+        }
+
+        async function salvarCupomAdmin() {
+            const codigoRaw = document.getElementById('adm-cupom-codigo').value.trim().toUpperCase();
+            const codigo = codigoRaw.replace(/[^A-Z0-9]/g, '').slice(0, 10);
+            const tipo = document.getElementById('adm-cupom-tipo').value;
+            const limiteInput = parseInt(document.getElementById('adm-cupom-limite').value);
+            const cron1Input = parseInt(document.getElementById('adm-cupom-cron1').value);
+            const cron2Input = parseInt(document.getElementById('adm-cupom-cron2').value);
+            const descInput = parseInt(document.getElementById('adm-cupom-desconto').value);
+            const status = document.getElementById('status-cupom-admin');
+
+            if (!codigo) {
+                alert("Digite um código alfanumérico (máx 10 caracteres).");
+                return;
+            }
+
+            const agoraMs = Date.now();
+            const expiraEmMs = (!isNaN(cron1Input) && cron1Input > 0) ? (agoraMs + cron1Input * 86400000) : null;
+            const duracaoDias = (tipo === 'premium' && !isNaN(cron2Input) && cron2Input > 0) ? cron2Input : null;
+            const descontoPorcentagem = (tipo === 'apostila') ? Math.min(100, Math.max(1, descInput || 100)) : null;
+            const limiteUsos = (!isNaN(limiteInput) && limiteInput > 0) ? limiteInput : null;
+
+            let tituloGerado = "";
+            if (tipo === 'premium') {
+                tituloGerado = duracaoDias ? `${duracaoDias} dias de Matéria Premium! (${codigo})` : `Matéria Premium Vitalício! (${codigo})`;
+            } else {
+                tituloGerado = `${descontoPorcentagem}% de desconto em qualquer apostila! (${codigo})`;
+            }
+
+            try {
+                await db.collection("cupons_sistema").doc(codigo).set({
+                    codigo,
+                    tipo,
+                    titulo: tituloGerado,
+                    criadoEmMs: agoraMs,
+                    expiraEmMs,
+                    duracaoDias,
+                    descontoPorcentagem,
+                    limiteUsos,
+                    usosAtuais: 0,
+                    ativoParaObter: true
+                });
+
+                status.innerText = `✅ Cupom '${codigo}' criado com sucesso!`;
+                document.getElementById('adm-cupom-codigo').value = "";
+                carregarListasAdmin();
+            } catch (e) {
+                alert("Erro ao criar cupom: " + e.message);
+            }
+        }
+
+        async function carregarCuponsNoAdmin() {
+            const divCupons = document.getElementById('lista-admin-cupons');
+            if (!divCupons) return;
+
+            const snap = await db.collection("cupons_sistema").get();
+            if (snap.empty) {
+                divCupons.innerHTML = "<p style='color:#777;'>Nenhum cupom cadastrado.</p>";
+                return;
+            }
+
+            const agora = Date.now();
+            divCupons.innerHTML = snap.docs.map(doc => {
+                const c = doc.data();
+                const vencido = c.expiraEmMs && agora > c.expiraEmMs;
+                const esgotado = c.limiteUsos && (c.usosAtuais || 0) >= c.limiteUsos;
+                const podeObter = c.ativoParaObter !== false && !vencido && !esgotado;
+
+                let textoCron1 = "Sem prazo (Cron. 1)";
+                if (c.expiraEmMs) {
+                    const diasRest = Math.ceil((c.expiraEmMs - agora) / 86400000);
+                    textoCron1 = diasRest > 0 ? `Expira em ${diasRest} dia(s)` : `Expirado`;
+                }
+
+                let textoDetalhe = c.tipo === 'premium'
+                    ? (c.duracaoDias ? `Cron. 2: ${c.duracaoDias} dias após ativar` : `Cron. 2: Vitalício`)
+                    : `Desconto: ${c.descontoPorcentagem}% OFF`;
+
+                let textoLimite = c.limiteUsos ? `${c.usosAtuais || 0}/${c.limiteUsos} obtidos` : `${c.usosAtuais || 0} obtidos (Ilimitado)`;
+
+                return `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px; background:${podeObter ? '#fff' : '#f5f5f5'};">
+                    <div>
+                        <strong style="font-size:15px; color:var(--marrom-header);">${c.codigo}</strong> — <span>${c.titulo}</span><br>
+                        <span style="font-size:11px; color:#555; font-weight:600;">
+                            ⏳ ${textoCron1} | ⚡ ${textoDetalhe} | 👥 ${textoLimite}
+                        </span><br>
+                        <span style="font-size:11px; color:${podeObter ? '#2E6F40' : '#C9302C'}; font-weight:700;">
+                            ${podeObter ? '● Obtenção Ativa' : '○ Obtenção Bloqueada (' + (vencido ? 'Tempo Esgotado' : esgotado ? 'Limite Atingido' : 'Desativado') + ')'}
+                        </span>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button onclick="alternarObtencaoCupom('${c.codigo}', ${c.ativoParaObter !== false})" style="padding:6px 10px; border-radius:6px; border:1px solid #888; cursor:pointer; font-weight:700; font-size:12px;">
+                            ${c.ativoParaObter !== false ? 'Desativar Obtenção' : 'Ativar Obtenção'}
+                        </button>
+                        <button onclick="excluirItemBanco('cupons_sistema', '${c.codigo}')" style="padding:6px 10px; border-radius:6px; border:none; background:#C9302C; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">
+                            🗑️
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function alternarObtencaoCupom(codigo, estadoAtual) {
+            await db.collection("cupons_sistema").doc(codigo).update({ ativoParaObter: !estadoAtual });
+            carregarCuponsNoAdmin();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            carregarListasAdmin();
+            carregarCuponsNoAdmin();
+        });
+
+        function importarPlanilhaCSV() {
+            const input = document.getElementById('adm-sim-csv');
+            const simId = document.getElementById('adm-csv-simid').value.trim();
+            const encodingEscolhido = document.getElementById('adm-csv-encoding').value;
+            const status = document.getElementById('status-importacao-csv');
+
+            if (input.files.length === 0 || !simId) {
+                alert("Selecione um arquivo CSV e informe o ID da coleção (ex: simulado-enfermagem).");
+                return;
+            }
+
+            status.innerText = "Lendo planilha...";
+            Papa.parse(input.files[0], {
+                header: false,
+                skipEmptyLines: true,
+                encoding: encodingEscolhido,
+                complete: async function(res) {
+                    let envios = 0;
+                    for (let i = 0; i < res.data.length; i++) {
+                        const linha = res.data[i];
+                        if (!linha[0] || linha[0].trim() === "") continue;
+
+                        if (i === 0 && linha[0].trim().toLowerCase().includes("enunciado")) {
+                            continue;
+                        }
+
+                        await db.collection(simId).add({
+                            Enunciado: (linha[0] || "").trim(),
+                            Alternativa_Correta: (linha[1] || "").trim(),
+                            Incorreta_1: (linha[2] || "").trim(),
+                            Incorreta_2: (linha[3] || "").trim(),
+                            Incorreta_3: (linha[4] || "").trim(),
+                            Incorreta_4: (linha[5] || "").trim(),
+                            Explicacao: (linha[6] || "").trim(),
+                            dificuldade: (linha[7] || "").trim(),
+                            assunto: (linha[8] || "").trim(),
+                            subsecao: (linha[9] || "").trim(),
+                            secao: (linha[10] || "").trim(),
+                            capitulo: (linha[11] || "").trim(),
+                            modulo: (linha[12] || "").trim(),
+                            bloco: (linha[13] || "1").trim()
+                        });
+
+                        envios++;
+                        status.innerText = `Enviadas ${envios} questões para '${simId}'...`;
+                    }
+
+                    // Auto-registra a coleção em simulados_info para aparecer imediatamente no Gerenciador!
+                    const nomeExtraido = formatarSufixoSimulado(simId);
+                    await db.collection("simulados_info").doc(simId).set({
+                        id: simId,
+                        colecaoQuestoes: simId,
+                        tituloVisivel: nomeExtraido,
+                        descricaoVisivel: "Simulado Completo",
+                        nome: `${nomeExtraido}: Simulado Completo`,
+                        ativo: true
+                    }, { merge: true });
+
+                    status.innerText = `✅ Concluído! ${envios} questões salvas em '${simId}' e simulado listado abaixo!`;
+                    carregarListasAdmin();
+                    inspecionarColecaoSimulado(simId);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
