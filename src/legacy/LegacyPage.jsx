@@ -28,6 +28,12 @@ export function LegacyPage({ page }) {
           script = document.createElement('script')
           script.src = `/legacy/${page}.js`
           script.dataset.legacyPage = page
+          script.onload = () => {
+            if (page === 'portal') {
+              window.carregarApostilasDoFirebase?.()
+              window.carregarSimuladosDoFirebase?.()
+            }
+          }
           document.body.appendChild(script)
         })
       } catch (reason) {

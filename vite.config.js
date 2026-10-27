@@ -3,6 +3,15 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/pdf-origin': {
+        target: 'https://bahvila.userguilhermeavila05.workers.dev',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/pdf-origin/, ''),
+      },
+    },
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,

@@ -600,12 +600,25 @@ let aguardandoEscolherApostilaParaCupom = false;
             document.querySelectorAll('.subview-apostila').forEach(v => v.classList.remove('active'));
             document.getElementById('sub-leitor').classList.add('active');
 
-            const arquivoPDF = apostilaSelecionada.pdfUrl || 'apostilaadministração.pdf';
+            const arquivoPDFOriginal = apostilaSelecionada.pdfUrl || 'apostilaadministração.pdf';
+            let arquivoPDF = arquivoPDFOriginal;
+            try {
+                const urlPDF = new URL(arquivoPDFOriginal, window.location.href);
+                const ambienteLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+                if (ambienteLocal && urlPDF.hostname === 'bahvila.userguilhermeavila05.workers.dev') {
+                    arquivoPDF = `/pdf-origin${urlPDF.pathname}${urlPDF.search}`;
+                }
+            } catch (e) {
+                console.error('URL do PDF inválida:', e);
+            }
             pdfjsLib.getDocument(arquivoPDF).promise.then(doc => {
                 pdfDoc = doc;
                 document.getElementById('page-count').textContent = doc.numPages;
                 renderizarPaginaPDF(pageNum);
-            }).catch(err => console.error("Erro no PDF:", err));
+            }).catch(err => {
+                console.error("Erro no PDF:", err);
+                alert('Não foi possível carregar esta apostila. Verifique a URL do PDF e a configuração de CORS do servidor.');
+            });
         }
 
         function renderizarPaginaPDF(num) {
@@ -620,6 +633,9 @@ let aguardandoEscolherApostilaParaCupom = false;
                         renderizarPaginaPDF(pageNumIsPending);
                         pageNumIsPending = null;
                     }
+                }).catch(err => {
+                    pageIsRendering = false;
+                    console.error('Erro ao desenhar a página do PDF:', err);
                 });
                 document.getElementById('page-num').textContent = num;
 
@@ -628,6 +644,9 @@ let aguardandoEscolherApostilaParaCupom = false;
                     const mapaPaginas = { ...(perfilFirestore.progressoPaginas || {}), [apostilaSelecionada.id]: num };
                     atualizarDadosUsuarioNoFirestore({ progressoPaginas: mapaPaginas });
                 }
+            }).catch(err => {
+                pageIsRendering = false;
+                console.error('Erro ao obter a página do PDF:', err);
             });
         }
 

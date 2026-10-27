@@ -28,3 +28,24 @@ function Export-LegacyPage {
 
 Export-LegacyPage -Source (Join-Path $sourceRoot 'index.html') -Name 'portal'
 Export-LegacyPage -Source (Join-Path $sourceRoot 'paineldecontrole.html') -Name 'admin'
+
+# O servidor atual do PDF não libera CORS para localhost. Esta adaptação usa
+# o proxy do Vite apenas no desenvolvimento e mantém a URL original em produção.
+$portalScriptPath = Join-Path $targetRoot 'portal.js'
+$portalScript = [System.IO.File]::ReadAllText($portalScriptPath)
+$originalPdfLine = "            const arquivoPDF = apostilaSelecionada.pdfUrl || 'apostilaadministração.pdf';"
+$adaptedPdfBlock = @'
+            const arquivoPDFOriginal = apostilaSelecionada.pdfUrl || 'apostilaadministração.pdf';
+            let arquivoPDF = arquivoPDFOriginal;
+            try {
+                const urlPDF = new URL(arquivoPDFOriginal, window.location.href);
+                const ambienteLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+                if (ambienteLocal && urlPDF.hostname === 'bahvila.userguilhermeavila05.workers.dev') {
+                    arquivoPDF = `/pdf-origin${urlPDF.pathname}${urlPDF.search}`;
+                }
+            } catch (e) {
+                console.error('URL do PDF inválida:', e);
+            }
+'@
+$portalScript = $portalScript.Replace($originalPdfLine, $adaptedPdfBlock.TrimEnd())
+[System.IO.File]::WriteAllText($portalScriptPath, $portalScript, $utf8)
