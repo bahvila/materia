@@ -1,25 +1,13 @@
 /* =========================================================
-           1. CONFIGURAÇÃO DO FIREBASE E ESTADO GLOBAL (100% NUVEM)
+           1. CONEXÃO SUPABASE E ESTADO GLOBAL
            ========================================================= */
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBwRtHKkNuNfgeCGL017GaOaOPg45KCPe8",
-            authDomain: "materia-education.firebaseapp.com",
-            projectId: "materia-education",
-            storageBucket: "materia-education.firebasestorage.app",
-            messagingSenderId: "110589682387",
-            appId: "1:110589682387:web:c047eccea25d1aaaf82a26",
-            measurementId: "G-21WCF5GPM6"
-        };
-
-    
-
-        firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp({ provider: "supabase" });
         const db = firebase.firestore();
         const auth = firebase.auth();
         const provider = new firebase.auth.GoogleAuthProvider();
 
-        // Variáveis em memória sincronizadas diretamente com o Firestore
+        // Variáveis em memória sincronizadas com o Supabase
         let usuarioAtual = null; // { uid, nome, email }
         let perfilFirestore = {
             isPremium: false,
@@ -50,7 +38,7 @@
         };
 
         /* =========================================================
-           2. SINCRONIZAÇÃO DO USUÁRIO COM O FIRESTORE
+           2. SINCRONIZAÇÃO DO USUÁRIO COM O SUPABASE
            ========================================================= */
         async function carregarOuCriarPerfilFirestore(user) {
             const docRef = db.collection("usuarios").doc(user.uid);
@@ -79,7 +67,7 @@
                     await docRef.set(perfilFirestore);
                 }
             } catch (e) {
-                console.error("Erro ao sincronizar perfil com Firestore:", e);
+                console.error("Erro ao sincronizar perfil com Supabase:", e);
             }
 
             await carregarHistoricoDoFirestore();
@@ -95,7 +83,7 @@
             try {
                 await db.collection("usuarios").doc(usuarioAtual.uid).set(novosCampos, { merge: true });
             } catch (e) {
-                console.error("Erro ao atualizar dados do usuário no Firestore:", e);
+                console.error("Erro ao atualizar dados do usuário no Supabase:", e);
             }
         }
 
@@ -113,7 +101,7 @@
                     .get();
                 historicoProvas = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             } catch (e) {
-                console.error("Erro ao buscar histórico do Firestore:", e);
+                console.error("Erro ao buscar histórico do Supabase:", e);
                 historicoProvas = [];
             }
             renderizarColunaHistorico();
@@ -172,8 +160,8 @@
             auth.signInAnonymously().then(() => {
                 fecharModal('modal-auth');
             }).catch(err => {
-                console.error("Erro no login anônimo Firebase:", err);
-                alert("Verifique se o login Anônimo ou Google estão ativados no painel do Firebase Authentication.");
+                console.error("Erro no login anônimo Supabase:", err);
+                alert("Verifique se os provedores Anônimo ou Google estão ativados no Supabase Auth.");
             });
         }
 
