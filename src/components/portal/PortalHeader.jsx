@@ -55,7 +55,7 @@ export function PortalHeader() {
         <LegacyButton id="btn-usuario-topo" className="btn-header-usuario" style={{ display: 'none' }} onLegacyClick="togglePopoverUsuario" aria-haspopup="menu" aria-expanded="false">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z" /></svg>
           <span id="label-nome-usuario">USUÁRIO</span>
-          <span className="user-menu-chevron" aria-hidden="true">⌄</span>
+          <span className="user-menu-chevron" aria-hidden="true"></span>
         </LegacyButton>
 
         <div id="popover-usuario" className="popover-usuario-header" role="menu">
