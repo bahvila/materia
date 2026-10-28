@@ -3,7 +3,7 @@ export const portalRoutes = {
   apostila: '/apostila',
   simulados: '/simulados',
   biblioteca: '/biblioteca',
-  administrador: '/administrador',
+  administrador: '/administrador/apostilas',
 }
 
 const portalTitles = {
@@ -26,6 +26,7 @@ export function sectionFromPath(pathname = window.location.pathname) {
     '/biblioteca': 'biblioteca',
     '/administrador': 'administrador',
   }
+  if (path.startsWith('/administrador/')) return 'administrador'
   return acceptedRoutes[path] || 'inicio'
 }
 
@@ -41,7 +42,10 @@ export function navigatePortal(section, { container = document, historyMode = 'p
 
   if (target === 'administrador') {
     const frame = container.querySelector('#admin-legacy-frame')
-    if (frame && !frame.src) frame.src = frame.dataset.src
+    const adminSection = window.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons)/)?.[1] || 'apostilas'
+    const frameSource = `/admin?section=${adminSection}`
+    if (frame && !frame.src) frame.src = frameSource
+    else if (frame?.contentWindow?.navegarAdmin) frame.contentWindow.navegarAdmin(adminSection, false)
   }
 
   if (target === 'apostila') {
@@ -55,8 +59,12 @@ export function navigatePortal(section, { container = document, historyMode = 'p
   if (target === 'biblioteca') window.renderizarBibliotecaAluno?.()
 
   document.title = portalTitles[target]
-  const destination = portalRoutes[target]
-  if (historyMode !== 'none' && window.location.pathname !== destination) {
+  const destination = target === 'administrador'
+    ? `/administrador/${window.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons)/)?.[1] || 'apostilas'}`
+    : portalRoutes[target]
+  if (requestedTarget !== target && window.location.pathname !== destination) {
+    window.history.replaceState({ separador: target }, '', destination)
+  } else if (historyMode !== 'none' && window.location.pathname !== destination) {
     window.history[historyMode === 'replace' ? 'replaceState' : 'pushState']({ separador: target }, '', destination)
   }
 }

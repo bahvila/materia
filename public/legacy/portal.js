@@ -125,7 +125,8 @@
             
             document.getElementById(id).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                if (btn.getAttribute('onclick').includes(id)) btn.classList.add('active');
+                const legacyTarget = btn.getAttribute('onclick') || '';
+                if (btn.dataset.section === id || legacyTarget.includes(id)) btn.classList.add('active');
             });
             
             document.getElementById('popover-cupons').classList.remove('active');
