@@ -196,17 +196,19 @@ async function profileSnapshot(userId) {
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('user_apostilas').select('apostila_id').eq('user_id', userId).is('revoked_at', null),
     client.from('reading_progress').select('apostila_id,pagina_atual').eq('user_id', userId),
-    client.from('subscriptions').select('id,status,current_period_end').eq('user_id', userId).eq('status', 'active'),
+    client.from('subscriptions').select('id,status,current_period_end,plans(nome,slug)').eq('user_id', userId).eq('status', 'active'),
   ])
   throwIfError(error)
   if (!profile) return null
   const progressoPaginas = Object.fromEntries((progress || []).map((item) => [item.apostila_id, item.pagina_atual]))
   const isPremium = (subscriptions || []).some((item) => !item.current_period_end || new Date(item.current_period_end) > new Date())
+  const activeSubscription = (subscriptions || []).find((item) => !item.current_period_end || new Date(item.current_period_end) > new Date())
   return {
     nome: profile.nome,
     email: profile.email,
     tipoUsuario: profile.tipo_usuario,
     isPremium,
+    planoAssinado: activeSubscription?.plans || null,
     bibliotecaIds: (accesses || []).map((item) => item.apostila_id),
     simuladosAdicionados: profile.metadata?.simuladosAdicionados || [],
     progressoPaginas,

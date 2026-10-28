@@ -98,6 +98,27 @@
         }
         .btn-header-entrar:hover, .btn-header-usuario:hover { background: #f2f2f2; }
         .btn-header-usuario svg { width: 18px; height: 18px; fill: #46352E; }
+        .user-menu-chevron { margin-left: 2px; font-size: 18px; line-height: 1; transition: transform .18s ease; }
+        .btn-header-usuario[aria-expanded="true"] .user-menu-chevron { transform: rotate(180deg); }
+        .popover-usuario-header {
+            display: none; position: absolute; top: 52px; right: 0; width: 240px;
+            padding: 8px; border: 1px solid rgba(70, 53, 46, .2); border-radius: 14px;
+            background: #fff; color: var(--marrom-header); box-shadow: 0 14px 35px rgba(0, 0, 0, .2); z-index: 205;
+        }
+        .popover-usuario-header.active { display: grid; gap: 3px; animation: userMenuIn .16s ease-out; }
+        @keyframes userMenuIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .user-menu-item {
+            display: flex; align-items: center; gap: 11px; width: 100%; min-height: 42px; padding: 9px 11px;
+            border: 0; border-radius: 9px; background: transparent; color: inherit; text-align: left;
+            font: inherit; font-size: 14px; font-weight: 750; cursor: pointer;
+        }
+        .user-menu-item:hover { background: #f5f0ed; }
+        .user-menu-icon { width: 20px; color: #80695f; text-align: center; }
+        .user-menu-item small, .user-menu-item strong { display: block; }
+        .user-menu-item small { margin-bottom: 2px; color: #846f66; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+        .user-menu-item strong { font-size: 14px; }
+        .user-menu-divider { height: 1px; margin: 4px 6px; background: #eadfda; }
+        .user-menu-logout { color: #a33b36; }
 
         /* =========================================================
            2. POPOVER DE CUPONS DO CABEÇALHO
@@ -832,6 +853,16 @@
             padding: 34px 42px 38px;
             box-shadow: 0 20px 55px rgba(0, 0, 0, 0.34);
         }
+        .modal-marrom-padrao.modal-profile { max-width: 450px; padding: 34px 38px 38px; }
+        .modal-profile h3 { margin: 0 0 7px; font-size: 25px; }
+        .profile-modal-eyebrow { margin: 0 0 7px; color: #e8c8b8; font-size: 12px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+        .profile-modal-description { margin: 0 0 22px; color: rgba(255, 255, 255, .82); font-size: 14px; line-height: 1.45; }
+        .profile-field-label { display: block; margin: 0 0 7px; font-size: 13px; font-weight: 800; }
+        .profile-name-input { width: 100%; height: 46px; padding: 0 13px; border: 2px solid transparent; border-radius: 10px; background: #fff; color: #352620; font-size: 15px; outline: 0; }
+        .profile-name-input:focus { border-color: #e0b499; box-shadow: 0 0 0 3px rgba(224, 180, 153, .2); }
+        .profile-email { min-height: 18px; margin: 8px 0 20px; color: rgba(255, 255, 255, .68); font-size: 12px; }
+        .profile-save-button { width: 100%; min-height: 46px; border: 0; border-radius: 10px; background: #fff; color: #46352e; font: inherit; font-size: 14px; font-weight: 850; cursor: pointer; }
+        .profile-save-button:hover { background: #f4eeeb; }
         .auth-modal-logo { height: 34px; margin: 0 0 16px; }
         .auth-modal-title { margin: 0 0 8px; font-size: 24px; }
         .auth-modal-description { margin: 0 auto 22px; max-width: 390px; font-size: 14px; line-height: 1.5; opacity: .9; }

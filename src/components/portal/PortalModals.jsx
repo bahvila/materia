@@ -152,6 +152,21 @@ export function AuthModal() {
   )
 }
 
+export function ProfileModal() {
+  return (
+    <div className="modal-marrom-padrao modal-profile">
+      <CloseModalButton modalId="modal-profile" />
+      <p className="profile-modal-eyebrow">Sua conta</p>
+      <h3>Editar perfil</h3>
+      <p className="profile-modal-description">Escolha como seu nome será exibido na plataforma.</p>
+      <label className="profile-field-label" htmlFor="input-profile-name">Nome</label>
+      <input id="input-profile-name" className="profile-name-input" type="text" maxLength="60" autoComplete="name" />
+      <p id="profile-email" className="profile-email" />
+      <LegacyButton className="profile-save-button" onLegacyClick="salvarPerfilUsuario">Salvar alterações</LegacyButton>
+    </div>
+  )
+}
+
 export function ConfirmAddModal() {
   return <ConfirmationModal modalId="modal-confirm-add" textId="texto-confirma-add" confirmLabel="SIM" onConfirm="confirmarAddSimulado">Adicionar simulado?</ConfirmationModal>
 }

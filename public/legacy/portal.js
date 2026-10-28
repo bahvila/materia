@@ -47,7 +47,10 @@
                 if (doc.exists) {
                     const dados = doc.data();
                     perfilFirestore = {
+                        nome: dados.nome || user.displayName || "USUÁRIO",
+                        email: dados.email || user.email || "",
                         isPremium: dados.isPremium || false,
+                        planoAssinado: dados.planoAssinado || null,
                         bibliotecaIds: dados.bibliotecaIds || ["admin-default"],
                         simuladosAdicionados: dados.simuladosAdicionados || [],
                         progressoPaginas: dados.progressoPaginas || {},
@@ -71,6 +74,9 @@
             }
 
             await carregarHistoricoDoFirestore();
+            if (usuarioAtual && perfilFirestore.nome) {
+                usuarioAtual.nome = String(perfilFirestore.nome).trim().split(' ')[0].toUpperCase();
+            }
             atualizarEstadoCabecalho();
             renderizarMeusCupons();
             renderizarBibliotecaAluno();
@@ -164,7 +170,51 @@
             });
         }
 
+        function togglePopoverUsuario() {
+            const popover = document.getElementById('popover-usuario');
+            const botao = document.getElementById('btn-usuario-topo');
+            if (!popover) return;
+            const aberto = popover.classList.toggle('active');
+            botao?.setAttribute('aria-expanded', String(aberto));
+            document.getElementById('popover-cupons')?.classList.remove('active');
+        }
+
+        function abrirPerfilUsuario() {
+            document.getElementById('popover-usuario')?.classList.remove('active');
+            const input = document.getElementById('input-profile-name');
+            const email = document.getElementById('profile-email');
+            if (input) input.value = perfilFirestore.nome || usuarioAtual?.nome || '';
+            if (email) email.innerText = perfilFirestore.email || usuarioAtual?.email || '';
+            abrirModal('modal-profile');
+            window.setTimeout(() => input?.focus(), 50);
+        }
+
+        async function salvarPerfilUsuario() {
+            const input = document.getElementById('input-profile-name');
+            const nome = input?.value.trim();
+            if (!nome) {
+                alert('Digite um nome válido.');
+                input?.focus();
+                return;
+            }
+            try {
+                await atualizarDadosUsuarioNoFirestore({ nome });
+                usuarioAtual.nome = nome.split(' ')[0].toUpperCase();
+                atualizarEstadoCabecalho();
+                fecharModal('modal-profile');
+            } catch (error) {
+                console.error('Erro ao atualizar perfil:', error);
+                alert('Não foi possível atualizar seu nome. Tente novamente.');
+            }
+        }
+
+        function abrirPlanoUsuario() {
+            document.getElementById('popover-usuario')?.classList.remove('active');
+            abrirModal('modal-premium');
+        }
+
         function logout() {
+            document.getElementById('popover-usuario')?.classList.remove('active');
             if (confirm("Deseja sair da sua conta?")) {
                 auth.signOut();
             }
@@ -208,6 +258,9 @@
             document.getElementById('btn-usuario-topo').style.display = usuarioAtual ? 'inline-flex' : 'none';
             if (usuarioAtual) {
                 document.getElementById('label-nome-usuario').innerText = usuarioAtual.nome;
+                const plano = perfilFirestore.planoAssinado?.nome || (perfilFirestore.isPremium ? 'Premium' : 'Gratuito');
+                const labelPlano = document.getElementById('label-plano-usuario');
+                if (labelPlano) labelPlano.innerText = plano;
             }
         }
 

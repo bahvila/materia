@@ -32,10 +32,18 @@
             </button>
 
             <!-- Botão Usuário Logado -->
-            <button id="btn-usuario-topo" class="btn-header-usuario" style="display: none;" onclick="logout()">
+            <button id="btn-usuario-topo" class="btn-header-usuario" style="display: none;" onclick="togglePopoverUsuario()" aria-haspopup="menu" aria-expanded="false">
                 <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/></svg>
                 <span id="label-nome-usuario">USUÁRIO</span>
+                <span class="user-menu-chevron" aria-hidden="true"></span>
             </button>
+
+            <div id="popover-usuario" class="popover-usuario-header" role="menu">
+                <button class="user-menu-item" onclick="abrirPerfilUsuario()" role="menuitem"><span class="user-menu-icon">●</span><span>Perfil</span></button>
+                <button class="user-menu-item" onclick="abrirPlanoUsuario()" role="menuitem"><span class="user-menu-icon">◆</span><span><small>Plano assinado</small><strong id="label-plano-usuario">Gratuito</strong></span></button>
+                <div class="user-menu-divider"></div>
+                <button class="user-menu-item user-menu-logout" onclick="logout()" role="menuitem"><span class="user-menu-icon">↪</span><span>Sair</span></button>
+            </div>
             
             <!-- JANELA POPOVER DE CUPONS -->
             <div id="popover-cupons" class="popover-cupons-header">
@@ -419,6 +427,19 @@
                     <span>Continuar como Visitante</span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div id="modal-profile" class="modal-overlay">
+        <div class="modal-marrom-padrao modal-profile">
+            <button class="btn-header-entrar" style="position:absolute; top:16px; right:16px; height:30px;" onclick="fecharModal('modal-profile')">X</button>
+            <p class="profile-modal-eyebrow">Sua conta</p>
+            <h3>Editar perfil</h3>
+            <p class="profile-modal-description">Escolha como seu nome será exibido na plataforma.</p>
+            <label class="profile-field-label" for="input-profile-name">Nome</label>
+            <input id="input-profile-name" class="profile-name-input" type="text" maxlength="60" autocomplete="name">
+            <p id="profile-email" class="profile-email"></p>
+            <button class="profile-save-button" onclick="salvarPerfilUsuario()">Salvar alterações</button>
         </div>
     </div>
 
