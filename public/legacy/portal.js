@@ -10,6 +10,7 @@
         // Variáveis em memória sincronizadas com o Supabase
         let usuarioAtual = null; // { uid, nome, email }
         let perfilFirestore = {
+            tipoUsuario: 'aluno',
             isPremium: false,
             bibliotecaIds: [],
             simuladosAdicionados: [],
@@ -47,7 +48,11 @@
                 if (doc.exists) {
                     const dados = doc.data();
                     perfilFirestore = {
+                        nome: dados.nome || user.displayName || "USUÁRIO",
+                        email: dados.email || user.email || "",
+                        tipoUsuario: dados.tipoUsuario || 'aluno',
                         isPremium: dados.isPremium || false,
+                        planoAssinado: dados.planoAssinado || null,
                         bibliotecaIds: dados.bibliotecaIds || ["admin-default"],
                         simuladosAdicionados: dados.simuladosAdicionados || [],
                         progressoPaginas: dados.progressoPaginas || {},
@@ -57,6 +62,7 @@
                     perfilFirestore = {
                         nome: user.displayName || "USUÁRIO",
                         email: user.email || "",
+                        tipoUsuario: 'aluno',
                         isPremium: false,
                         bibliotecaIds: [],
                         simuladosAdicionados: [],
@@ -71,6 +77,9 @@
             }
 
             await carregarHistoricoDoFirestore();
+            if (usuarioAtual && perfilFirestore.nome) {
+                usuarioAtual.nome = String(perfilFirestore.nome).trim().split(' ')[0].toUpperCase();
+            }
             atualizarEstadoCabecalho();
             renderizarMeusCupons();
             renderizarBibliotecaAluno();
@@ -116,7 +125,8 @@
             
             document.getElementById(id).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                if (btn.getAttribute('onclick').includes(id)) btn.classList.add('active');
+                const legacyTarget = btn.getAttribute('onclick') || '';
+                if (btn.dataset.section === id || legacyTarget.includes(id)) btn.classList.add('active');
             });
             
             document.getElementById('popover-cupons').classList.remove('active');
@@ -151,8 +161,7 @@
                 fecharModal('modal-auth');
             }).catch(err => {
                 console.error("Erro no login com Google:", err);
-                alert("Não foi possível autenticar com o Google. Tentando modo visitante na nuvem...");
-                loginVisitanteRapido();
+                alert(err.message || "Não foi possível autenticar com o Google. Verifique se o provedor está ativado no Supabase.");
             });
         }
 
@@ -165,9 +174,61 @@
             });
         }
 
+        function togglePopoverUsuario() {
+            const popover = document.getElementById('popover-usuario');
+            const botao = document.getElementById('btn-usuario-topo');
+            if (!popover) return;
+            const aberto = popover.classList.toggle('active');
+            botao?.setAttribute('aria-expanded', String(aberto));
+            document.getElementById('popover-cupons')?.classList.remove('active');
+        }
+
+        function abrirPerfilUsuario() {
+            document.getElementById('popover-usuario')?.classList.remove('active');
+            const input = document.getElementById('input-profile-name');
+            const email = document.getElementById('profile-email');
+            if (input) input.value = perfilFirestore.nome || usuarioAtual?.nome || '';
+            if (email) email.innerText = perfilFirestore.email || usuarioAtual?.email || '';
+            abrirModal('modal-profile');
+            window.setTimeout(() => input?.focus(), 50);
+        }
+
+        async function salvarPerfilUsuario() {
+            const input = document.getElementById('input-profile-name');
+            const nome = input?.value.trim();
+            if (!nome) {
+                alert('Digite um nome válido.');
+                input?.focus();
+                return;
+            }
+            try {
+                await atualizarDadosUsuarioNoFirestore({ nome });
+                usuarioAtual.nome = nome.split(' ')[0].toUpperCase();
+                atualizarEstadoCabecalho();
+                fecharModal('modal-profile');
+            } catch (error) {
+                console.error('Erro ao atualizar perfil:', error);
+                alert('Não foi possível atualizar seu nome. Tente novamente.');
+            }
+        }
+
+        function abrirPlanoUsuario() {
+            document.getElementById('popover-usuario')?.classList.remove('active');
+            abrirModal('modal-premium');
+        }
+
         function logout() {
-            if (confirm("Deseja sair da sua conta?")) {
-                auth.signOut();
+            document.getElementById('popover-usuario')?.classList.remove('active');
+            abrirModal('modal-confirm-logout');
+        }
+
+        async function confirmarLogout() {
+            fecharModal('modal-confirm-logout');
+            try {
+                await auth.signOut();
+            } catch (error) {
+                console.error('Erro ao sair da conta:', error);
+                alert('Não foi possível sair da conta. Tente novamente.');
             }
         }
 
@@ -185,6 +246,7 @@
             } else {
                 usuarioAtual = null;
                 perfilFirestore = {
+                    tipoUsuario: 'aluno',
                     isPremium: false,
                     bibliotecaIds: [],
                     simuladosAdicionados: [],
@@ -202,6 +264,8 @@
 
         function atualizarEstadoCabecalho() {
             const isPremium = perfilFirestore.isPremium === true;
+            const isAdmin = ['admin', 'super_admin'].includes(perfilFirestore.tipoUsuario);
+            window.portalAdminAuthorized = isAdmin;
             document.getElementById('btn-banner-premium').style.display = isPremium ? 'none' : 'block';
             document.getElementById('badge-voce-premium').style.display = isPremium ? 'inline-flex' : 'none';
 
@@ -209,6 +273,14 @@
             document.getElementById('btn-usuario-topo').style.display = usuarioAtual ? 'inline-flex' : 'none';
             if (usuarioAtual) {
                 document.getElementById('label-nome-usuario').innerText = usuarioAtual.nome;
+                const plano = perfilFirestore.planoAssinado?.nome || (perfilFirestore.isPremium ? 'Premium' : 'Gratuito');
+                const labelPlano = document.getElementById('label-plano-usuario');
+                if (labelPlano) labelPlano.innerText = plano;
+            }
+            const adminButton = document.getElementById('nav-administrador');
+            if (adminButton) adminButton.style.display = isAdmin && usuarioAtual ? '' : 'none';
+            if (!isAdmin && document.getElementById('administrador')?.classList.contains('active')) {
+                mudarSeparador('inicio');
             }
         }
 

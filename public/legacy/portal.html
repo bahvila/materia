@@ -9,6 +9,7 @@
                 <button class="nav-btn" onclick="mudarSeparador('apostila')">Apostila</button>
                 <button class="nav-btn" onclick="mudarSeparador('simulados')">Simulado</button>
                 <button class="nav-btn" onclick="mudarSeparador('biblioteca')">Biblioteca</button>
+                <button id="nav-administrador" class="nav-btn" style="display:none;" onclick="mudarSeparador('administrador')">Administrador</button>
             </nav>
         </div>
 
@@ -32,10 +33,18 @@
             </button>
 
             <!-- Botão Usuário Logado -->
-            <button id="btn-usuario-topo" class="btn-header-usuario" style="display: none;" onclick="logout()">
+            <button id="btn-usuario-topo" class="btn-header-usuario" style="display: none;" onclick="togglePopoverUsuario()" aria-haspopup="menu" aria-expanded="false">
                 <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/></svg>
                 <span id="label-nome-usuario">USUÁRIO</span>
+                <span class="user-menu-chevron" aria-hidden="true"></span>
             </button>
+
+            <div id="popover-usuario" class="popover-usuario-header" role="menu">
+                <button class="user-menu-item" onclick="abrirPerfilUsuario()" role="menuitem"><span class="user-menu-icon">●</span><span>Perfil</span></button>
+                <button class="user-menu-item" onclick="abrirPlanoUsuario()" role="menuitem"><span class="user-menu-icon">◆</span><span><small>Plano assinado</small><strong id="label-plano-usuario">Gratuito</strong></span></button>
+                <div class="user-menu-divider"></div>
+                <button class="user-menu-item user-menu-logout" onclick="logout()" role="menuitem"><span class="user-menu-icon">↪</span><span>Sair</span></button>
+            </div>
             
             <!-- JANELA POPOVER DE CUPONS -->
             <div id="popover-cupons" class="popover-cupons-header">
@@ -277,6 +286,11 @@
             <div id="grid-biblioteca-aluno" class="grid-3-col"></div>
         </div>
 
+        <!-- Disponível apenas para perfis admin/super_admin. -->
+        <div id="administrador" class="tab-content admin-tab-content">
+            <iframe id="admin-legacy-frame" class="admin-legacy-frame" title="Painel administrativo" data-src="/admin"></iframe>
+        </div>
+
     </div>
 
     <!-- =========================================================
@@ -405,17 +419,43 @@
 
     <!-- MODAL 6: AUTENTICAÇÃO GOOGLE (Corrigido sem erro de sintaxe) -->
     <div id="modal-auth" class="modal-overlay">
-        <div class="modal-marrom-padrao" style="max-width:420px; text-align:center;">
+        <div class="modal-marrom-padrao modal-auth modal-centered">
             <button class="btn-header-entrar" style="position:absolute; top:16px; right:16px; height:30px;" onclick="fecharModal('modal-auth')">X</button>
-                <img src="/assets/logo-materia.png" alt="Matéria" style="height:32px; margin-bottom:18px;">
-            <h3 style="margin:0 0 10px 0; font-size:22px;">Entrar na Plataforma</h3>
-            <p id="aviso-acao-pendente" style="font-size:14px; opacity:0.9; margin-bottom:24px;">Utilize a sua conta Google para sincronizar simulados, cupons e biblioteca na nuvem.</p>
-            
-            <button class="btn-branco-acao" style="display:flex; align-items:center; justify-content:center; gap:12px; font-size:16px; margin-bottom:10px;" onclick="loginComGoogle()">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="G" style="width:20px;">
-                Continuar com o Google
-            </button>
-            <button class="btn-header-entrar" style="width:100%; justify-content:center; padding:10px;" onclick="loginVisitanteRapido()">Continuar como Visitante (Nuvem)</button>
+            <img class="auth-modal-logo" src="/assets/logo-materia.png" alt="Matéria">
+            <h3 class="auth-modal-title">Entrar na Plataforma</h3>
+            <p id="aviso-acao-pendente" class="auth-modal-description">Entre para sincronizar simulados, cupons e sua biblioteca.</p>
+            <div class="auth-modal-actions">
+                <button class="auth-action-button google-login-button" onclick="loginComGoogle()">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="" aria-hidden="true">
+                    <span>Continuar com o Google</span>
+                </button>
+                <button class="auth-action-button guest-login-button" onclick="loginVisitanteRapido()">
+                    <span>Continuar como Visitante</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-profile" class="modal-overlay">
+        <div class="modal-marrom-padrao modal-profile">
+            <button class="btn-header-entrar" style="position:absolute; top:16px; right:16px; height:30px;" onclick="fecharModal('modal-profile')">X</button>
+            <p class="profile-modal-eyebrow">Sua conta</p>
+            <h3>Editar perfil</h3>
+            <p class="profile-modal-description">Escolha como seu nome será exibido na plataforma.</p>
+            <label class="profile-field-label" for="input-profile-name">Nome</label>
+            <input id="input-profile-name" class="profile-name-input" type="text" maxlength="60" autocomplete="name">
+            <p id="profile-email" class="profile-email"></p>
+            <button class="profile-save-button" onclick="salvarPerfilUsuario()">Salvar alterações</button>
+        </div>
+    </div>
+
+    <div id="modal-confirm-logout" class="modal-overlay">
+        <div class="modal-alerta-branca">
+            <h3 id="texto-confirma-logout">Deseja sair da sua conta?</h3>
+            <div class="botoes-alerta">
+                <button class="btn-texto-neutro" onclick="fecharModal('modal-confirm-logout')">Cancelar</button>
+                <button class="btn-fundo-vermelho" onclick="confirmarLogout()">Sair</button>
+            </div>
         </div>
     </div>
 

@@ -2,6 +2,31 @@
         firebase.initializeApp({ provider: "supabase" });
         const db = firebase.firestore();
         const auth = firebase.auth();
+        const adminSections = ['apostilas', 'simulados', 'cupons'];
+
+        function secaoAdminAtual() {
+            try {
+                const parentMatch = window.parent.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons)/);
+                if (parentMatch) return parentMatch[1];
+            } catch (_) { /* iframe isolado: usa a query local */ }
+            const querySection = new URLSearchParams(window.location.search).get('section');
+            return adminSections.includes(querySection) ? querySection : 'apostilas';
+        }
+
+        function navegarAdmin(section, updateAddress = true) {
+            const target = adminSections.includes(section) ? section : 'apostilas';
+            document.querySelectorAll('.admin-page').forEach(page => page.classList.remove('active'));
+            document.querySelectorAll('.admin-nav-button').forEach(button => button.classList.toggle('active', button.dataset.adminSection === target));
+            document.getElementById(`admin-page-${target}`)?.classList.add('active');
+            if (updateAddress) {
+                try {
+                    window.parent.history.pushState({ separador: 'administrador', adminSection: target }, '', `/administrador/${target}`);
+                    window.parent.document.title = `${target.charAt(0).toUpperCase() + target.slice(1)} | Administrador | Matéria`;
+                } catch (_) {
+                    window.history.pushState({}, '', `/admin?section=${target}`);
+                }
+            }
+        }
 
         function fazerLoginAdmin() {
             const email = document.getElementById('adm-login-email').value.trim();
@@ -34,8 +59,14 @@
                     .maybeSingle();
                 const autorizado = !error && ['admin', 'super_admin'].includes(perfil?.tipo_usuario);
                 if (!autorizado) {
-                    alert('Este usuário não possui permissão de administrador.');
-                    await auth.signOut();
+                    boxLogin.style.display = 'none';
+                    boxLogado.style.display = 'none';
+                    document.querySelector('main').innerHTML = `
+                        <section class="admin-access-denied">
+                            <span>Área restrita</span>
+                            <h2>Acesso administrativo não autorizado</h2>
+                            <p>${error ? 'Não foi possível confirmar sua permissão agora.' : 'Sua conta continua conectada, mas não possui perfil de administrador.'}</p>
+                        </section>`;
                     return;
                 }
                 boxLogin.style.display = 'none';
@@ -73,133 +104,91 @@
 
 const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitulo', 'modulo', 'bloco'];
 
-        // Extrai um nome limpo caso comece com "simulado-" (Ex: "simulado-anac-comissario" -> "Anac Comissario")
-        function formatarSufixoSimulado(idColecao) {
-            let limpo = idColecao.replace(/^simulado[-_]?/i, '');
-            return limpo.split(/[-_]/).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+        function gerarSlug(texto) {
+            return String(texto || '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         }
 
-        // Lê a coleção "simulado-..." no Firestore e preenche as opções das colunas 8 a 14
-        async function inspecionarColecaoSimulado(idOpcional, filtrosSalvos = {}) {
-            const idInput = document.getElementById('adm-sim-id');
-            if (idOpcional) idInput.value = idOpcional;
-            const colId = idInput.value.trim();
-            const status = document.getElementById('status-sim');
+        function preencherFiltrosQuestoes(questoes = [], filtrosSalvos = {}) {
+            const valores = Object.fromEntries(camposTaxonomia.map(campo => [campo, new Set()]));
+            questoes.forEach(questao => camposTaxonomia.forEach(campo => {
+                const valor = questao[campo] || questao.metadata?.[campo];
+                if (String(valor || '').trim()) valores[campo].add(String(valor).trim());
+            }));
+            camposTaxonomia.forEach(campo => {
+                const select = document.getElementById(`filtro-col-${campo}`);
+                const opcoes = [...valores[campo]].sort();
+                select.innerHTML = `<option value="">Todos (${opcoes.length})</option>` + opcoes
+                    .map(valor => `<option value="${valor}" ${valor === filtrosSalvos[campo] ? 'selected' : ''}>${valor}</option>`).join('');
+            });
+        }
 
-            if (!colId) { alert("Digite o ID da coleção (ex: simulado-anac-comissario-de-voo)."); return; }
+        function novoSimulado() {
+            document.getElementById('adm-sim-id').value = '';
+            document.getElementById('adm-sim-titulo').value = '';
+            document.getElementById('adm-sim-slug').value = '';
+            document.getElementById('adm-sim-desc').value = '';
+            document.getElementById('adm-sim-capa').value = '';
+            document.getElementById('adm-sim-qtd').value = '0';
+            document.getElementById('adm-sim-tempo').value = '60';
+            document.getElementById('adm-sim-status').value = 'rascunho';
+            preencherFiltrosQuestoes();
+            document.getElementById('status-sim').innerText = '';
+            document.getElementById('adm-sim-titulo').focus();
+        }
 
-            status.innerText = `🔄 Lendo questões da coleção '${colId}'...`;
-            try {
-                const snap = await db.collection(colId).get();
-                if (snap.empty) {
-                    status.innerText = `⚠️ Nenhuma questão encontrada na coleção '${colId}'. Verifique se digitou o nome exato.`;
-                    return;
-                }
-
-                // Coleta valores únicos das colunas 8 a 14
-                const valoresUnicos = {};
-                camposTaxonomia.forEach(c => valoresUnicos[c] = new Set());
-
-                snap.docs.forEach(doc => {
-                    const d = doc.data();
-                    camposTaxonomia.forEach(c => {
-                        if (d[c] && String(d[c]).trim() !== "") {
-                            valoresUnicos[c].add(String(d[c]).trim());
-                        }
-                    });
-                });
-
-                // Popula os <select>
-                camposTaxonomia.forEach(c => {
-                    const sel = document.getElementById(`filtro-col-${c}`);
-                    const valorAtual = filtrosSalvos[c] || "";
-                    const opcoes = Array.from(valoresUnicos[c]).sort();
-                    sel.innerHTML = `<option value="">Todos (${opcoes.length} opções)</option>` +
-                        opcoes.map(v => `<option value="${v}" ${v === valorAtual ? 'selected' : ''}>${v}</option>`).join('');
-                });
-
-                // Se os campos de Título estiverem vazios, sugere automaticamente a partir do nome depois de "simulado-"
-                if (!document.getElementById('adm-sim-titulo').value.trim()) {
-                    document.getElementById('adm-sim-titulo').value = formatarSufixoSimulado(colId);
-                }
-
-                // Se essa coleção ainda não estava listada em simulados_info, registra automaticamente!
-                const infoDoc = await db.collection("simulados_info").doc(colId).get();
-                if (!infoDoc.exists) {
-                    await db.collection("simulados_info").doc(colId).set({
-                        id: colId,
-                        colecaoQuestoes: colId,
-                        tituloVisivel: document.getElementById('adm-sim-titulo').value.trim() || formatarSufixoSimulado(colId),
-                        descricaoVisivel: document.getElementById('adm-sim-desc').value.trim() || "Simulado Geral",
-                        nome: `${document.getElementById('adm-sim-titulo').value.trim() || formatarSufixoSimulado(colId)}: Geral`,
-                        questoes_banca: 20,
-                        tempo_banca: 60,
-                        filtros: {},
-                        ativo: true
-                    }, { merge: true });
-                    carregarListasAdmin();
-                }
-
-                status.innerText = `✅ ${snap.size} questões encontradas em '${colId}'! Filtros das colunas 8 a 14 carregados.`;
-            } catch (e) {
-                alert("Erro ao ler coleção: " + e.message);
+        document.getElementById('adm-sim-titulo')?.addEventListener('input', event => {
+            if (!document.getElementById('adm-sim-id').value) {
+                document.getElementById('adm-sim-slug').value = gerarSlug(event.target.value);
             }
-        }
+        });
 
         async function salvarConfigSimulado() {
-            const id = document.getElementById('adm-sim-id').value.trim();
-            const tituloVisivel = document.getElementById('adm-sim-titulo').value.trim();
-            const descricaoVisivel = document.getElementById('adm-sim-desc').value.trim();
-            const capaUrl = document.getElementById('adm-sim-capa').value.trim();
-            const qtd = parseInt(document.getElementById('adm-sim-qtd').value) || 20;
-            const tempo = parseInt(document.getElementById('adm-sim-tempo').value) || 60;
+            const id = document.getElementById('adm-sim-id').value;
+            const titulo = document.getElementById('adm-sim-titulo').value.trim();
+            const slug = document.getElementById('adm-sim-slug').value.trim() || gerarSlug(titulo);
+            if (!titulo || !slug) return alert('Informe o título do simulado.');
 
-            if (!id || !tituloVisivel) {
-                alert("Preencha o ID da coleção e o Texto Visível (Título Principal).");
-                return;
-            }
-
-            // Captura os filtros escolhidos nas colunas 8 a 14
             const filtros = {};
-            camposTaxonomia.forEach(c => {
-                const val = document.getElementById(`filtro-col-${c}`).value.trim();
-                if (val !== "") filtros[c] = val;
+            camposTaxonomia.forEach(campo => {
+                const valor = document.getElementById(`filtro-col-${campo}`).value;
+                if (valor) filtros[campo] = valor;
             });
-
-            try {
-                await db.collection("simulados_info").doc(id).set({
-                    id,
-                    colecaoQuestoes: id,
-                    tituloVisivel,
-                    descricaoVisivel,
-                    nome: descricaoVisivel ? `${tituloVisivel}: ${descricaoVisivel}` : tituloVisivel,
-                    capaUrl,
-                    questoes_banca: qtd,
-                    tempo_banca: tempo,
-                    filtros,
-                    ativo: true
-                }, { merge: true });
-
-                document.getElementById('status-sim').innerText = "✅ Simulado configurado e atualizado no site!";
-                carregarListasAdmin();
-            } catch (e) {
-                alert("Erro ao salvar simulado: " + e.message);
-            }
+            const row = {
+                titulo,
+                slug,
+                descricao: document.getElementById('adm-sim-desc').value.trim(),
+                imagem_path: document.getElementById('adm-sim-capa').value.trim(),
+                duracao_minutos: Number(document.getElementById('adm-sim-tempo').value) || 60,
+                status: document.getElementById('adm-sim-status').value,
+                configuracao: { filtros },
+                published_at: document.getElementById('adm-sim-status').value === 'publicado' ? new Date().toISOString() : null,
+                updated_at: new Date().toISOString(),
+            };
+            const query = id
+                ? window.supabase.from('simulados').update(row).eq('id', id).select('id').single()
+                : window.supabase.from('simulados').insert(row).select('id').single();
+            const { data, error } = await query;
+            if (error) return alert('Erro ao salvar simulado: ' + error.message);
+            document.getElementById('adm-sim-id').value = data.id;
+            document.getElementById('status-sim').innerText = '✅ Simulado salvo com sucesso.';
+            await carregarListasAdmin();
         }
 
-        async function editarSimuladoNaCaixa(docId) {
-            const doc = await db.collection("simulados_info").doc(docId).get();
-            if (!doc.exists) return;
-            const d = doc.data();
-
-            document.getElementById('adm-sim-id').value = doc.id;
-            document.getElementById('adm-sim-titulo').value = d.tituloVisivel || (d.nome ? d.nome.split(':')[0].trim() : formatarSufixoSimulado(doc.id));
-            document.getElementById('adm-sim-desc').value = d.descricaoVisivel || (d.nome && d.nome.includes(':') ? d.nome.split(':').slice(1).join(':').trim() : "");
-            document.getElementById('adm-sim-capa').value = d.capaUrl || "";
-            document.getElementById('adm-sim-qtd').value = d.questoes_banca || 20;
-            document.getElementById('adm-sim-tempo').value = d.tempo_banca || 60;
-
-            await inspecionarColecaoSimulado(doc.id, d.filtros || {});
+        async function editarSimuladoNaCaixa(id) {
+            const { data, error } = await window.supabase.from('simulados').select('*').eq('id', id).single();
+            if (error) return alert('Erro ao carregar simulado: ' + error.message);
+            document.getElementById('adm-sim-id').value = data.id;
+            document.getElementById('adm-sim-titulo').value = data.titulo;
+            document.getElementById('adm-sim-slug').value = data.slug;
+            document.getElementById('adm-sim-desc').value = data.descricao || '';
+            document.getElementById('adm-sim-capa').value = data.imagem_path || '';
+            document.getElementById('adm-sim-qtd').value = (data.questoes || []).length;
+            document.getElementById('adm-sim-tempo').value = data.duracao_minutos || 60;
+            document.getElementById('adm-sim-status').value = data.status || 'rascunho';
+            preencherFiltrosQuestoes(data.questoes || [], data.configuracao?.filtros || {});
+            document.getElementById('adm-csv-simid').value = data.id;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -235,43 +224,59 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
                 }).join('');
             }
 
-            // 2. Listar Simulados (Mostrando nome sem o prefixo "simulado-", Título, Descrição e Filtros ativos)
-            const snapSim = await db.collection("simulados_info").get();
-            if (snapSim.empty) {
-                divSim.innerHTML = "<p style='color:#777;'>Nenhum simulado registrado ainda. Digite o ID 'simulado-...' na Caixa 2 e clique em '🔍 Ler Coleção'.</p>";
+            // 2. Simulados são uma única tabela; as questões ficam no JSONB `questoes`.
+            const { data: simulados, error: erroSimulados } = await window.supabase
+                .from('simulados').select('id,slug,titulo,descricao,status,questoes,configuracao').order('created_at', { ascending: false });
+            if (erroSimulados) {
+                divSim.innerHTML = `<p style="color:#C9302C;">${erroSimulados.message}</p>`;
+            } else if (!simulados.length) {
+                divSim.innerHTML = "<p style='color:#777;'>Nenhum simulado cadastrado. Use o formulário acima para criar o primeiro.</p>";
             } else {
-                divSim.innerHTML = snapSim.docs.map(doc => {
-                    const d = doc.data();
-                    const visivel = d.ativo !== false;
-                    const sufixoColecao = doc.id.replace(/^simulado[-_]?/i, '');
-                    const titulo = d.tituloVisivel || d.nome || sufixoColecao;
-                    const desc = d.descricaoVisivel || "";
-                    const filtrosAtivos = d.filtros ? Object.entries(d.filtros).map(([k, v]) => `${k}: ${v}`).join(' | ') : '';
-
+                divSim.innerHTML = simulados.map(simulado => {
+                    const publicado = simulado.status === 'publicado';
+                    const filtros = simulado.configuracao?.filtros || {};
+                    const filtrosAtivos = Object.entries(filtros).map(([campo, valor]) => `${campo}: ${valor}`).join(' | ');
                     return `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px; background:${visivel ? '#fff' : '#f5f5f5'};">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px; background:${publicado ? '#fff' : '#f5f5f5'};">
                         <div>
-                            <span style="font-size:10px; background:#EBEBEB; padding:2px 6px; border-radius:4px; font-weight:700;">Coleção: ${sufixoColecao}</span><br>
-                            <strong style="font-size:15px;">${titulo}</strong> ${desc ? `<span style="color:#555;">— ${desc}</span>` : ''}<br>
-                            ${filtrosAtivos ? `<span style="font-size:11px; color:#46352E; font-weight:600;">🌪️ Filtro: ${filtrosAtivos}</span><br>` : ''}
-                            <span style="font-size:11px; color:${visivel ? '#2E6F40' : '#C9302C'}; font-weight:700;">
-                                ${visivel ? '● Visível no Site' : '○ Oculto no Site'}
-                            </span>
+                            <span style="font-size:10px; background:#EBEBEB; padding:2px 6px; border-radius:4px; font-weight:700;">/${simulado.slug}</span><br>
+                            <strong style="font-size:15px;">${simulado.titulo}</strong>${simulado.descricao ? ` <span style="color:#555;">— ${simulado.descricao}</span>` : ''}<br>
+                            <span style="font-size:11px; color:#555;">${(simulado.questoes || []).length} questões</span>${filtrosAtivos ? ` · <span style="font-size:11px;">${filtrosAtivos}</span>` : ''}<br>
+                            <span style="font-size:11px; color:${publicado ? '#2E6F40' : '#C98219'}; font-weight:700;">${publicado ? '● Publicado' : `○ ${simulado.status}`}</span>
                         </div>
-                        <div style="display:flex; gap:6px;">
-                            <button onclick="editarSimuladoNaCaixa('${doc.id}')" style="padding:6px 10px; border-radius:6px; border:1px solid var(--marrom-header); background:#fff; color:var(--marrom-header); cursor:pointer; font-weight:700; font-size:12px;">
-                                ⚙️ Configurar
-                            </button>
-                            <button onclick="alternarVisibilidade('simulados_info', '${doc.id}', ${visivel})" style="padding:6px 10px; border-radius:6px; border:1px solid #888; cursor:pointer; font-weight:700; font-size:12px;">
-                                ${visivel ? 'Ocultar' : 'Mostrar'}
-                            </button>
-                            <button onclick="excluirItemBanco('simulados_info', '${doc.id}')" style="padding:6px 10px; border-radius:6px; border:none; background:#C9302C; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">
-                                🗑️
-                            </button>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                            <button onclick="editarSimuladoNaCaixa('${simulado.id}')" style="padding:6px 10px; border-radius:6px; border:1px solid var(--marrom-header); background:#fff; color:var(--marrom-header); cursor:pointer; font-weight:700; font-size:12px;">Editar</button>
+                            <button onclick="alternarPublicacaoSimulado('${simulado.id}', '${simulado.status}')" style="padding:6px 10px; border-radius:6px; border:1px solid #888; cursor:pointer; font-weight:700; font-size:12px;">${publicado ? 'Despublicar' : 'Publicar'}</button>
+                            <button onclick="excluirSimulado('${simulado.id}', '${simulado.titulo.replace(/'/g, "\\'")}')" style="padding:6px 10px; border-radius:6px; border:none; background:#C9302C; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">🗑️</button>
                         </div>
                     </div>`;
                 }).join('');
             }
+            const csvSelect = document.getElementById('adm-csv-simid');
+            if (csvSelect) {
+                const atual = csvSelect.value;
+                csvSelect.innerHTML = '<option value="">Selecione...</option>' + (simulados || [])
+                    .map(simulado => `<option value="${simulado.id}">${simulado.titulo} (${(simulado.questoes || []).length})</option>`).join('');
+                if ([...(simulados || [])].some(simulado => simulado.id === atual)) csvSelect.value = atual;
+            }
+        }
+
+        async function alternarPublicacaoSimulado(id, statusAtual) {
+            const novoStatus = statusAtual === 'publicado' ? 'rascunho' : 'publicado';
+            const { error } = await window.supabase.from('simulados').update({
+                status: novoStatus,
+                published_at: novoStatus === 'publicado' ? new Date().toISOString() : null
+            }).eq('id', id);
+            if (error) return alert('Erro ao atualizar simulado: ' + error.message);
+            carregarListasAdmin();
+        }
+
+        async function excluirSimulado(id, titulo) {
+            if (!confirm(`Excluir permanentemente o simulado "${titulo}"?`)) return;
+            const { error } = await window.supabase.from('simulados').delete().eq('id', id);
+            if (error) return alert('Erro ao excluir simulado: ' + error.message);
+            if (document.getElementById('adm-sim-id').value === id) novoSimulado();
+            carregarListasAdmin();
         }
 
         async function alternarVisibilidade(colecao, docId, estadoAtual) {
@@ -403,67 +408,69 @@ function alternarCamposTipoCupomAdmin() {
             carregarCuponsNoAdmin();
         });
 
-        function importarPlanilhaCSV() {
+        navegarAdmin(secaoAdminAtual(), false);
+
+        async function importarPlanilhaCSV() {
             const input = document.getElementById('adm-sim-csv');
-            const simId = document.getElementById('adm-csv-simid').value.trim();
-            const encodingEscolhido = document.getElementById('adm-csv-encoding').value;
+            const simId = document.getElementById('adm-csv-simid').value;
+            const mode = document.getElementById('adm-csv-mode').value;
+            const encoding = document.getElementById('adm-csv-encoding').value;
             const status = document.getElementById('status-importacao-csv');
+            if (!input.files.length || !simId) return alert('Selecione um simulado e um arquivo CSV.');
 
-            if (input.files.length === 0 || !simId) {
-                alert("Selecione um arquivo CSV e informe o ID da coleção (ex: simulado-enfermagem).");
-                return;
-            }
+            const { data: simulado, error: loadError } = await window.supabase
+                .from('simulados').select('id,titulo,questoes').eq('id', simId).single();
+            if (loadError) return alert('Erro ao carregar simulado: ' + loadError.message);
+            status.innerText = 'Lendo e validando a planilha...';
 
-            status.innerText = "Lendo planilha...";
             Papa.parse(input.files[0], {
                 header: false,
                 skipEmptyLines: true,
-                encoding: encodingEscolhido,
-                complete: async function(res) {
-                    let envios = 0;
-                    for (let i = 0; i < res.data.length; i++) {
-                        const linha = res.data[i];
-                        if (!linha[0] || linha[0].trim() === "") continue;
-
-                        if (i === 0 && linha[0].trim().toLowerCase().includes("enunciado")) {
-                            continue;
-                        }
-
-                        await db.collection(simId).add({
-                            Enunciado: (linha[0] || "").trim(),
-                            Alternativa_Correta: (linha[1] || "").trim(),
-                            Incorreta_1: (linha[2] || "").trim(),
-                            Incorreta_2: (linha[3] || "").trim(),
-                            Incorreta_3: (linha[4] || "").trim(),
-                            Incorreta_4: (linha[5] || "").trim(),
-                            Explicacao: (linha[6] || "").trim(),
-                            dificuldade: (linha[7] || "").trim(),
-                            assunto: (linha[8] || "").trim(),
-                            subsecao: (linha[9] || "").trim(),
-                            secao: (linha[10] || "").trim(),
-                            capitulo: (linha[11] || "").trim(),
-                            modulo: (linha[12] || "").trim(),
-                            bloco: (linha[13] || "1").trim()
-                        });
-
-                        envios++;
-                        status.innerText = `Enviadas ${envios} questões para '${simId}'...`;
+                encoding,
+                complete: async ({ data: linhas }) => {
+                    const novasQuestoes = linhas.flatMap((linha, index) => {
+                        if (!String(linha[0] || '').trim()) return [];
+                        if (index === 0 && String(linha[0]).toLowerCase().includes('enunciado')) return [];
+                        const legacy = {
+                            Enunciado: String(linha[0] || '').trim(),
+                            Alternativa_Correta: String(linha[1] || '').trim(),
+                            Incorreta_1: String(linha[2] || '').trim(),
+                            Incorreta_2: String(linha[3] || '').trim(),
+                            Incorreta_3: String(linha[4] || '').trim(),
+                            Incorreta_4: String(linha[5] || '').trim(),
+                            Explicacao: String(linha[6] || '').trim(),
+                            dificuldade: String(linha[7] || '').trim(),
+                            assunto: String(linha[8] || '').trim(),
+                            subsecao: String(linha[9] || '').trim(),
+                            secao: String(linha[10] || '').trim(),
+                            capitulo: String(linha[11] || '').trim(),
+                            modulo: String(linha[12] || '').trim(),
+                            bloco: String(linha[13] || '1').trim()
+                        };
+                        return [{
+                            id: crypto.randomUUID(), enunciado: legacy.Enunciado, comentario: legacy.Explicacao,
+                            dificuldade: legacy.dificuldade || null, assunto: legacy.assunto || null,
+                            subsecao: legacy.subsecao || null, secao: legacy.secao || null,
+                            capitulo: legacy.capitulo || null, modulo: legacy.modulo || null,
+                            bloco: legacy.bloco || null, status: 'publicado', metadata: legacy
+                        }];
+                    });
+                    if (!novasQuestoes.length) {
+                        status.innerText = '⚠️ Nenhuma questão válida encontrada.';
+                        return;
                     }
-
-                    // Auto-registra a coleção em simulados_info para aparecer imediatamente no Gerenciador!
-                    const nomeExtraido = formatarSufixoSimulado(simId);
-                    await db.collection("simulados_info").doc(simId).set({
-                        id: simId,
-                        colecaoQuestoes: simId,
-                        tituloVisivel: nomeExtraido,
-                        descricaoVisivel: "Simulado Completo",
-                        nome: `${nomeExtraido}: Simulado Completo`,
-                        ativo: true
-                    }, { merge: true });
-
-                    status.innerText = `✅ Concluído! ${envios} questões salvas em '${simId}' e simulado listado abaixo!`;
-                    carregarListasAdmin();
-                    inspecionarColecaoSimulado(simId);
+                    const questoes = mode === 'append' ? [...(simulado.questoes || []), ...novasQuestoes] : novasQuestoes;
+                    status.innerText = `Salvando ${questoes.length} questões...`;
+                    const { error } = await window.supabase.from('simulados').update({
+                        questoes, quantidade_questoes: questoes.length, updated_at: new Date().toISOString()
+                    }).eq('id', simulado.id);
+                    if (error) {
+                        status.innerText = '❌ Erro: ' + error.message;
+                        return;
+                    }
+                    status.innerText = `✅ ${novasQuestoes.length} questões importadas. Total: ${questoes.length}.`;
+                    await carregarListasAdmin();
+                    await editarSimuladoNaCaixa(simulado.id);
                 }
             });
         }

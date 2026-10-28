@@ -3,10 +3,11 @@ import { callLegacy } from '../../legacy/legacyBridge'
 import { navigatePortal } from '../../legacy/portalNavigation'
 
 const navigation = [
-  ['inicio', 'Início'],
-  ['apostila', 'Apostila'],
-  ['simulados', 'Simulado'],
-  ['biblioteca', 'Biblioteca'],
+  ['inicio', 'Início', false],
+  ['apostila', 'Apostila', false],
+  ['simulados', 'Simulado', false],
+  ['biblioteca', 'Biblioteca', false],
+  ['administrador', 'Administrador', true],
 ]
 
 export function PortalHeader() {
@@ -20,11 +21,13 @@ export function PortalHeader() {
           onClick={() => navigatePortal('inicio')}
         />
         <nav aria-label="Navegação principal">
-          {navigation.map(([id, label]) => (
+          {navigation.map(([id, label, adminOnly]) => (
             <LegacyButton
               key={id}
+              id={adminOnly ? 'nav-administrador' : undefined}
               data-section={id}
               className={`nav-btn${id === 'inicio' ? ' active' : ''}`}
+              style={adminOnly ? { display: 'none' } : undefined}
               onClick={() => navigatePortal(id)}
             >
               {label}
@@ -52,10 +55,27 @@ export function PortalHeader() {
 
         <LegacyButton id="btn-entrar-topo" className="btn-header-entrar" onLegacyClick="abrirModal" legacyArgs={['modal-auth']}>Entrar</LegacyButton>
 
-        <LegacyButton id="btn-usuario-topo" className="btn-header-usuario" style={{ display: 'none' }} onLegacyClick="logout">
+        <LegacyButton id="btn-usuario-topo" className="btn-header-usuario" style={{ display: 'none' }} onLegacyClick="togglePopoverUsuario" aria-haspopup="menu" aria-expanded="false">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z" /></svg>
           <span id="label-nome-usuario">USUÁRIO</span>
+          <span className="user-menu-chevron" aria-hidden="true"></span>
         </LegacyButton>
+
+        <div id="popover-usuario" className="popover-usuario-header" role="menu">
+          <LegacyButton className="user-menu-item" onLegacyClick="abrirPerfilUsuario" role="menuitem">
+            <span className="user-menu-icon" aria-hidden="true">●</span>
+            <span>Perfil</span>
+          </LegacyButton>
+          <LegacyButton className="user-menu-item" onLegacyClick="abrirPlanoUsuario" role="menuitem">
+            <span className="user-menu-icon" aria-hidden="true">◆</span>
+            <span><small>Plano assinado</small><strong id="label-plano-usuario">Gratuito</strong></span>
+          </LegacyButton>
+          <div className="user-menu-divider" />
+          <LegacyButton className="user-menu-item user-menu-logout" onLegacyClick="logout" role="menuitem">
+            <span className="user-menu-icon" aria-hidden="true">↪</span>
+            <span>Sair</span>
+          </LegacyButton>
+        </div>
 
         <div id="popover-cupons" className="popover-cupons-header">
           <div className="abas-cupom-topo">
