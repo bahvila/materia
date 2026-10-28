@@ -9,6 +9,7 @@
                 <button class="nav-btn" onclick="mudarSeparador('apostila')">Apostila</button>
                 <button class="nav-btn" onclick="mudarSeparador('simulados')">Simulado</button>
                 <button class="nav-btn" onclick="mudarSeparador('biblioteca')">Biblioteca</button>
+                <button id="nav-administrador" class="nav-btn" style="display:none;" onclick="mudarSeparador('administrador')">Administrador</button>
             </nav>
         </div>
 
@@ -285,6 +286,11 @@
             <div id="grid-biblioteca-aluno" class="grid-3-col"></div>
         </div>
 
+        <!-- Disponível apenas para perfis admin/super_admin. -->
+        <div id="administrador" class="tab-content admin-tab-content">
+            <iframe id="admin-legacy-frame" class="admin-legacy-frame" title="Painel administrativo" data-src="/admin"></iframe>
+        </div>
+
     </div>
 
     <!-- =========================================================
@@ -440,6 +446,16 @@
             <input id="input-profile-name" class="profile-name-input" type="text" maxlength="60" autocomplete="name">
             <p id="profile-email" class="profile-email"></p>
             <button class="profile-save-button" onclick="salvarPerfilUsuario()">Salvar alterações</button>
+        </div>
+    </div>
+
+    <div id="modal-confirm-logout" class="modal-overlay">
+        <div class="modal-alerta-branca">
+            <h3 id="texto-confirma-logout">Deseja sair da sua conta?</h3>
+            <div class="botoes-alerta">
+                <button class="btn-texto-neutro" onclick="fecharModal('modal-confirm-logout')">Cancelar</button>
+                <button class="btn-fundo-vermelho" onclick="confirmarLogout()">Sair</button>
+            </div>
         </div>
     </div>
 

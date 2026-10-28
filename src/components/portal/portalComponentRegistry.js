@@ -3,6 +3,7 @@ import {
   ConfirmAddModal,
   ConfirmCouponModal,
   ConfirmRemoveSimulationModal,
+  LogoutModal,
   PaymentModal,
   PaywallModal,
   PremiumModal,
@@ -19,6 +20,7 @@ export const portalModalComponents = {
   'modal-profile': ProfileModal,
   'modal-confirm-add': ConfirmAddModal,
   'modal-confirm-remove': ConfirmRemoveSimulationModal,
+  'modal-confirm-logout': LogoutModal,
   'modal-confirm-cupom-apostila': ConfirmCouponModal,
 }
 

@@ -175,6 +175,10 @@ export function ConfirmRemoveSimulationModal() {
   return <ConfirmationModal modalId="modal-confirm-remove" textId="texto-confirma-remove" confirmLabel="SIM, REMOVER" onConfirm="confirmarRemoveSimulado">Remover simulado?</ConfirmationModal>
 }
 
+export function LogoutModal() {
+  return <ConfirmationModal modalId="modal-confirm-logout" textId="texto-confirma-logout" cancelLabel="Cancelar" confirmLabel="Sair" cancelClassName="btn-texto-neutro" confirmClassName="btn-fundo-vermelho" onConfirm="confirmarLogout">Deseja sair da sua conta?</ConfirmationModal>
+}
+
 export function ConfirmCouponModal() {
   return <ConfirmationModal modalId="modal-confirm-cupom-apostila" textId="texto-confirma-cupom-apostila" confirmLabel="SIM, USAR CUPOM" onConfirm="confirmarResgateCupomNaApostila">Deseja usar seu cupom de 100% OFF para desbloquear esta apostila?</ConfirmationModal>
 }

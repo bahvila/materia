@@ -137,7 +137,7 @@
             z-index: 200;
             color: var(--marrom-header);
         }
-        .popover-cupons-header.active { display: block; }
+        .popover-cupons-header.active { display: block; animation: userMenuIn .16s ease-out; }
 
         .abas-cupom-topo {
             display: grid;
@@ -234,6 +234,11 @@
         .container { max-width: 1180px; margin: 0 auto; padding: 35px 25px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        .admin-tab-content { margin: -18px -10px 0; }
+        .admin-legacy-frame {
+            display: block; width: 100%; min-height: calc(100vh - 125px); border: 0;
+            border-radius: 16px; background: #f5f5f5; box-shadow: 0 8px 24px rgba(70, 53, 46, .08);
+        }
 
         .hero-home {
             text-align: center;
@@ -349,7 +354,7 @@
             z-index: 90;
             box-shadow: 0 12px 28px rgba(0,0,0,0.3);
         }
-        .popover-marrom.active { display: block; }
+        .popover-marrom.active { display: block; animation: userMenuIn .16s ease-out; }
         .popover-marrom input {
             width: 100%;
             padding: 11px 14px;
@@ -680,7 +685,9 @@
         .modal-alerta-branca h3 { font-size: 22px; margin: 0 0 30px 0; font-weight: 800; line-height: 1.4; }
         .botoes-alerta { display: flex; gap: 20px; justify-content: center; }
         .btn-texto-vermelho { background: transparent; color: #E81123; font-weight: 800; font-size: 18px; border: none; cursor: pointer; padding: 10px 20px; }
+        .btn-texto-neutro { background: transparent; color: #46352E; font-weight: 800; font-size: 18px; border: none; cursor: pointer; padding: 10px 20px; }
         .btn-fundo-verde { background: #5CB85C; color: #FFF; font-weight: 800; font-size: 18px; border: none; border-radius: 10px; cursor: pointer; padding: 12px 40px; }
+        .btn-fundo-vermelho { background: #B53C36; color: #FFF; font-weight: 800; font-size: 18px; border: none; border-radius: 10px; cursor: pointer; padding: 12px 40px; }
         .btn-fundo-vermelho { background: #E81123; color: #FFF; font-weight: 800; font-size: 18px; border: none; border-radius: 10px; cursor: pointer; padding: 12px 40px; }
         .btn-texto-verde { background: transparent; color: #5CB85C; font-weight: 800; font-size: 18px; border: none; cursor: pointer; padding: 10px 20px; }
 
@@ -778,7 +785,23 @@
             display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.68);
             z-index: 300; align-items: center; justify-content: center; padding: 20px;
         }
-        .modal-overlay.active { display: flex; }
+        .modal-overlay.active { display: flex; animation: modalBackdropIn .18s ease-out; }
+        .modal-overlay.active > * { animation: modalContentIn .22s cubic-bezier(.2, .75, .25, 1); }
+        @keyframes modalBackdropIn {
+            from { background: rgba(0, 0, 0, 0); }
+            to { background: rgba(0, 0, 0, 0.68); }
+        }
+        @keyframes modalContentIn {
+            from { opacity: 0; transform: translateY(8px) scale(.975); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .popover-usuario-header.active,
+            .popover-cupons-header.active,
+            .popover-marrom.active,
+            .modal-overlay.active,
+            .modal-overlay.active > * { animation: none; }
+        }
 
         .modal-caixa-premium {
             background: #080605; border-radius: 22px; overflow: hidden;

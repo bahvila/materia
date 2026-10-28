@@ -3,6 +3,7 @@ export const portalRoutes = {
   apostila: '/apostila',
   simulados: '/simulados',
   biblioteca: '/biblioteca',
+  administrador: '/administrador',
 }
 
 const portalTitles = {
@@ -10,6 +11,7 @@ const portalTitles = {
   apostila: 'Apostila | Matéria',
   simulados: 'Simulados | Matéria',
   biblioteca: 'Biblioteca | Matéria',
+  administrador: 'Administrador | Matéria',
 }
 
 export function sectionFromPath(pathname = window.location.pathname) {
@@ -22,17 +24,25 @@ export function sectionFromPath(pathname = window.location.pathname) {
     '/simulado': 'simulados',
     '/simulados': 'simulados',
     '/biblioteca': 'biblioteca',
+    '/administrador': 'administrador',
   }
   return acceptedRoutes[path] || 'inicio'
 }
 
 export function navigatePortal(section, { container = document, historyMode = 'push' } = {}) {
-  const target = portalRoutes[section] ? section : 'inicio'
+  const requestedTarget = portalRoutes[section] ? section : 'inicio'
+  const target = requestedTarget === 'administrador' && window.portalAdminAuthorized !== true ? 'inicio' : requestedTarget
   container.querySelectorAll('.tab-content').forEach((tab) => tab.classList.remove('active'))
   container.querySelectorAll('.nav-btn').forEach((button) => button.classList.remove('active'))
   container.querySelector(`#${target}`)?.classList.add('active')
   container.querySelector(`.nav-btn[data-section="${target}"]`)?.classList.add('active')
   container.querySelector('#popover-cupons')?.classList.remove('active')
+  container.querySelector('#popover-usuario')?.classList.remove('active')
+
+  if (target === 'administrador') {
+    const frame = container.querySelector('#admin-legacy-frame')
+    if (frame && !frame.src) frame.src = frame.dataset.src
+  }
 
   if (target === 'apostila') {
     container.querySelectorAll('.subview-apostila').forEach((view) => view.classList.remove('active'))

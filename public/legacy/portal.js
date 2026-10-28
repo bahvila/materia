@@ -10,6 +10,7 @@
         // Variáveis em memória sincronizadas com o Supabase
         let usuarioAtual = null; // { uid, nome, email }
         let perfilFirestore = {
+            tipoUsuario: 'aluno',
             isPremium: false,
             bibliotecaIds: [],
             simuladosAdicionados: [],
@@ -49,6 +50,7 @@
                     perfilFirestore = {
                         nome: dados.nome || user.displayName || "USUÁRIO",
                         email: dados.email || user.email || "",
+                        tipoUsuario: dados.tipoUsuario || 'aluno',
                         isPremium: dados.isPremium || false,
                         planoAssinado: dados.planoAssinado || null,
                         bibliotecaIds: dados.bibliotecaIds || ["admin-default"],
@@ -60,6 +62,7 @@
                     perfilFirestore = {
                         nome: user.displayName || "USUÁRIO",
                         email: user.email || "",
+                        tipoUsuario: 'aluno',
                         isPremium: false,
                         bibliotecaIds: [],
                         simuladosAdicionados: [],
@@ -215,8 +218,16 @@
 
         function logout() {
             document.getElementById('popover-usuario')?.classList.remove('active');
-            if (confirm("Deseja sair da sua conta?")) {
-                auth.signOut();
+            abrirModal('modal-confirm-logout');
+        }
+
+        async function confirmarLogout() {
+            fecharModal('modal-confirm-logout');
+            try {
+                await auth.signOut();
+            } catch (error) {
+                console.error('Erro ao sair da conta:', error);
+                alert('Não foi possível sair da conta. Tente novamente.');
             }
         }
 
@@ -234,6 +245,7 @@
             } else {
                 usuarioAtual = null;
                 perfilFirestore = {
+                    tipoUsuario: 'aluno',
                     isPremium: false,
                     bibliotecaIds: [],
                     simuladosAdicionados: [],
@@ -251,6 +263,8 @@
 
         function atualizarEstadoCabecalho() {
             const isPremium = perfilFirestore.isPremium === true;
+            const isAdmin = ['admin', 'super_admin'].includes(perfilFirestore.tipoUsuario);
+            window.portalAdminAuthorized = isAdmin;
             document.getElementById('btn-banner-premium').style.display = isPremium ? 'none' : 'block';
             document.getElementById('badge-voce-premium').style.display = isPremium ? 'inline-flex' : 'none';
 
@@ -261,6 +275,11 @@
                 const plano = perfilFirestore.planoAssinado?.nome || (perfilFirestore.isPremium ? 'Premium' : 'Gratuito');
                 const labelPlano = document.getElementById('label-plano-usuario');
                 if (labelPlano) labelPlano.innerText = plano;
+            }
+            const adminButton = document.getElementById('nav-administrador');
+            if (adminButton) adminButton.style.display = isAdmin && usuarioAtual ? '' : 'none';
+            if (!isAdmin && document.getElementById('administrador')?.classList.contains('active')) {
+                mudarSeparador('inicio');
             }
         }
 

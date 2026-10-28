@@ -3,10 +3,11 @@ import { callLegacy } from '../../legacy/legacyBridge'
 import { navigatePortal } from '../../legacy/portalNavigation'
 
 const navigation = [
-  ['inicio', 'Início'],
-  ['apostila', 'Apostila'],
-  ['simulados', 'Simulado'],
-  ['biblioteca', 'Biblioteca'],
+  ['inicio', 'Início', false],
+  ['apostila', 'Apostila', false],
+  ['simulados', 'Simulado', false],
+  ['biblioteca', 'Biblioteca', false],
+  ['administrador', 'Administrador', true],
 ]
 
 export function PortalHeader() {
@@ -20,11 +21,13 @@ export function PortalHeader() {
           onClick={() => navigatePortal('inicio')}
         />
         <nav aria-label="Navegação principal">
-          {navigation.map(([id, label]) => (
+          {navigation.map(([id, label, adminOnly]) => (
             <LegacyButton
               key={id}
+              id={adminOnly ? 'nav-administrador' : undefined}
               data-section={id}
               className={`nav-btn${id === 'inicio' ? ' active' : ''}`}
+              style={adminOnly ? { display: 'none' } : undefined}
               onClick={() => navigatePortal(id)}
             >
               {label}

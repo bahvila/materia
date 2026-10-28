@@ -14,13 +14,13 @@ export function CloseModalButton({ modalId, style }) {
   )
 }
 
-export function ConfirmationModal({ textId, children, modalId, confirmLabel, onConfirm }) {
+export function ConfirmationModal({ textId, children, modalId, confirmLabel, cancelLabel = 'NÃO', cancelClassName = 'btn-texto-vermelho', confirmClassName = 'btn-fundo-verde', onConfirm }) {
   return (
     <div className="modal-alerta-branca">
       <h3 id={textId} style={{ whiteSpace: 'pre-line' }}>{children}</h3>
       <div className="botoes-alerta">
-        <LegacyButton className="btn-texto-vermelho" onLegacyClick="fecharModal" legacyArgs={[modalId]}>NÃO</LegacyButton>
-        <LegacyButton className="btn-fundo-verde" onLegacyClick={onConfirm}>{confirmLabel}</LegacyButton>
+        <LegacyButton className={cancelClassName} onLegacyClick="fecharModal" legacyArgs={[modalId]}>{cancelLabel}</LegacyButton>
+        <LegacyButton className={confirmClassName} onLegacyClick={onConfirm}>{confirmLabel}</LegacyButton>
       </div>
     </div>
   )
