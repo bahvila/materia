@@ -15,6 +15,19 @@ Para gerar a versão de produção:
 npm run build
 ```
 
+## Supabase
+
+A aplicação usa `@supabase/supabase-js`. Copie `.env.example` para `.env.local` e
+preencha a URL e a chave pública do projeto. Nunca coloque uma chave secreta no frontend.
+
+Para testar a conexão com as tabelas:
+
+```powershell
+npm run audit:supabase
+```
+
+As migrations complementares ficam em `supabase/migrations`.
+
 ## Estrutura
 
 - `src/legacy/LegacyPage.jsx`: montagem React das interfaces preservadas.
@@ -24,7 +37,10 @@ npm run build
 
 ## Rotas
 
-- `/` — início
+- `/inicio` — início
+- `/apostila` — apostilas
+- `/simulados` — simulados
+- `/biblioteca` — biblioteca
 - `/admin` — painel administrativo
 
 O arquivo `paineldecontrole.html` foi mantido para redirecionar links antigos para `/admin`.

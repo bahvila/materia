@@ -1,15 +1,5 @@
-// Configuração do Firebase (Projeto: materia-education)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBwRtHKkNuNfgeCGL017GaOaOPg45KCPe8",
-            authDomain: "materia-education.firebaseapp.com",
-            projectId: "materia-education",
-            storageBucket: "materia-education.firebasestorage.app",
-            messagingSenderId: "110589682387",
-            appId: "1:110589682387:web:c047eccea25d1aaaf82a26",
-            measurementId: "G-21WCF5GPM6"
-        };
-
-        firebase.initializeApp(firebaseConfig);
+// Supabase é exposto pela camada de compatibilidade carregada pelo React.
+        firebase.initializeApp({ provider: "supabase" });
         const db = firebase.firestore();
         const auth = firebase.auth();
 
@@ -25,7 +15,7 @@
                     document.getElementById('adm-login-senha').value = "";
                 })
                 .catch(err => {
-                    alert("Erro ao autenticar: verifique seu e-mail e senha no Firebase Authentication.\n\nDetalhe: " + err.message);
+                    alert("Erro ao autenticar: verifique seu e-mail e senha no Supabase Auth.\n\nDetalhe: " + err.message);
                 });
         }
 
@@ -33,10 +23,21 @@
             auth.signOut();
         }
 
-        auth.onAuthStateChanged(user => {
+        auth.onAuthStateChanged(async user => {
             const boxLogin = document.getElementById('box-login-admin');
             const boxLogado = document.getElementById('box-logado-admin');
             if (user) {
+                const { data: perfil, error } = await window.supabase
+                    .from('profiles')
+                    .select('tipo_usuario')
+                    .eq('id', user.uid)
+                    .maybeSingle();
+                const autorizado = !error && ['admin', 'super_admin'].includes(perfil?.tipo_usuario);
+                if (!autorizado) {
+                    alert('Este usuário não possui permissão de administrador.');
+                    await auth.signOut();
+                    return;
+                }
                 boxLogin.style.display = 'none';
                 boxLogado.style.display = 'flex';
                 document.getElementById('label-email-admin').innerText = user.email;

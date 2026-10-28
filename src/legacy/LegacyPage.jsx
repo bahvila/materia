@@ -4,6 +4,7 @@ import { flushSync } from 'react-dom'
 import { PortalHeader } from '../components/portal/PortalHeader'
 import { portalModalComponents } from '../components/portal/portalComponentRegistry'
 import { navigatePortal, sectionFromPath } from './portalNavigation'
+import { installSupabaseFirebaseAdapter } from '../lib/supabaseFirebaseAdapter'
 
 function mountPortalComponents(container) {
   const roots = []
@@ -49,6 +50,7 @@ export function LegacyPage({ page }) {
 
         requestAnimationFrame(() => {
           if (!active) return
+          installSupabaseFirebaseAdapter()
           if (page === 'portal' && containerRef.current) {
             componentRoots = mountPortalComponents(containerRef.current)
             const initialSection = sectionFromPath()

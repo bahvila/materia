@@ -1,5 +1,32 @@
+# Dependências e builds
 node_modules/
-.vite/
 dist/
-.env.local
+.vite/
+coverage/
+playwright-report/
+test-results/
+
+# Configuração local e segredos
+.env
+.env.*
+!.env.example
+*.local
+
+# Supabase local (config e migrations permanecem versionados)
+supabase/.temp/
+supabase/.branches/
+
+# Ferramentas e depuração
+.edge-debug/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Sistema operacional e editores
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo

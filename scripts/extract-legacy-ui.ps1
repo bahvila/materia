@@ -29,6 +29,16 @@ function Export-LegacyPage {
 Export-LegacyPage -Source (Join-Path $sourceRoot 'index.html') -Name 'portal'
 Export-LegacyPage -Source (Join-Path $sourceRoot 'paineldecontrole.html') -Name 'admin'
 
+# O código legado mantém a mesma interface interna, mas a implementação é fornecida
+# pelo adaptador Supabase carregado pelo React. Remove as credenciais Firebase antigas.
+foreach ($legacyScriptName in @('portal.js', 'admin.js')) {
+    $legacyScriptPath = Join-Path $targetRoot $legacyScriptName
+    $legacyScript = [System.IO.File]::ReadAllText($legacyScriptPath)
+    $firebaseBootstrapPattern = '(?s)\s*const firebaseConfig = \{.*?\};\s*firebase\.initializeApp\(firebaseConfig\);'
+    $legacyScript = [regex]::Replace($legacyScript, $firebaseBootstrapPattern, "`r`n        firebase.initializeApp({ provider: 'supabase' });")
+    [System.IO.File]::WriteAllText($legacyScriptPath, $legacyScript, $utf8)
+}
+
 # Mantém uma única cópia de cada imagem ativa em public/assets, mesmo quando o
 # HTML histórico usa vários nomes para o mesmo arquivo.
 $portalHtmlPath = Join-Path $targetRoot 'portal.html'
