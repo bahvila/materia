@@ -159,18 +159,20 @@
         function loginComGoogle() {
             auth.signInWithPopup(provider).then(() => {
                 fecharModal('modal-auth');
+                mostrarToast('success', 'Sua conta Google foi conectada e seus dados serão sincronizados.', { title: 'Login realizado' });
             }).catch(err => {
                 console.error("Erro no login com Google:", err);
-                alert(err.message || "Não foi possível autenticar com o Google. Verifique se o provedor está ativado no Supabase.");
+                mostrarToast('error', err.message || 'Não foi possível autenticar com o Google. Verifique a configuração do provedor.', { title: 'Falha no login' });
             });
         }
 
         function loginVisitanteRapido() {
             auth.signInAnonymously().then(() => {
                 fecharModal('modal-auth');
+                mostrarToast('success', 'Você entrou como visitante. Seus dados desta sessão já podem ser salvos.', { title: 'Acesso liberado' });
             }).catch(err => {
                 console.error("Erro no login anônimo Supabase:", err);
-                alert("Verifique se os provedores Anônimo ou Google estão ativados no Supabase Auth.");
+                mostrarToast('error', 'Não foi possível entrar como visitante. Verifique a configuração de autenticação.', { title: 'Falha no acesso' });
             });
         }
 
@@ -197,7 +199,7 @@
             const input = document.getElementById('input-profile-name');
             const nome = input?.value.trim();
             if (!nome) {
-                alert('Digite um nome válido.');
+                mostrarToast('warning', 'Digite um nome válido antes de salvar.', { title: 'Nome obrigatório' });
                 input?.focus();
                 return;
             }
@@ -206,9 +208,10 @@
                 usuarioAtual.nome = nome.split(' ')[0].toUpperCase();
                 atualizarEstadoCabecalho();
                 fecharModal('modal-profile');
+                mostrarToast('success', 'Seu nome foi atualizado com sucesso.', { title: 'Perfil salvo' });
             } catch (error) {
                 console.error('Erro ao atualizar perfil:', error);
-                alert('Não foi possível atualizar seu nome. Tente novamente.');
+                mostrarToast('error', 'Não foi possível atualizar seu nome. Tente novamente.', { title: 'Erro ao salvar perfil' });
             }
         }
 
@@ -226,9 +229,10 @@
             fecharModal('modal-confirm-logout');
             try {
                 await auth.signOut();
+                mostrarToast('info', 'Sua sessão foi encerrada com segurança.', { title: 'Você saiu da conta' });
             } catch (error) {
                 console.error('Erro ao sair da conta:', error);
-                alert('Não foi possível sair da conta. Tente novamente.');
+                mostrarToast('error', 'Não foi possível sair da conta. Tente novamente.', { title: 'Erro ao encerrar sessão' });
             }
         }
 
@@ -330,6 +334,7 @@
                 await atualizarDadosUsuarioNoFirestore({ cupons: novaListaCupons });
                 input.value = '';
                 alternarAbaCupom('meus');
+                mostrarToast('success', `O cupom ${codigo} foi adicionado à sua conta.`, { title: 'Cupom recebido' });
             });
         }
 
@@ -393,7 +398,7 @@ let aguardandoEscolherApostilaParaCupom = false;
                 if (verificarSeEstaNaPaginaDetalheApostila()) {
                     abrirDetalheApostilaPorId(apostilaSelecionada.id, false);
                 }
-                alert("🎉 1 mês de Matéria Premium ativado com sucesso! Todas as apostilas estão liberadas sem custo.");
+                mostrarToast('success', 'Seu período Premium foi ativado. Todas as apostilas estão liberadas.', { title: 'Cupom utilizado' });
             } else {
                 // Cupom de Apostila Grátis
                 idCupomPendenteParaApostila = idCupom;
@@ -427,7 +432,7 @@ let aguardandoEscolherApostilaParaCupom = false;
                 }
 
                 if (!cupomAlvo) {
-                    alert("Você não possui um cupom de apostila disponível no momento.");
+                    mostrarToast('warning', 'Você não possui um cupom de apostila disponível no momento.', { title: 'Cupom indisponível' });
                     return;
                 }
 
@@ -438,7 +443,7 @@ let aguardandoEscolherApostilaParaCupom = false;
                 cancelarModoEscolhaCupom();
                 renderizarMeusCupons();
                 abrirDetalheApostilaPorId(apostilaSelecionada.id, true);
-                alert(`🎉 Apostila "${apostilaSelecionada.titulo}" desbloqueada gratuitamente e adicionada à sua Biblioteca!`);
+                mostrarToast('success', `A apostila “${apostilaSelecionada.titulo}” foi desbloqueada e adicionada à sua Biblioteca.`, { title: 'Cupom utilizado' });
             });
         }
 
@@ -629,10 +634,11 @@ let aguardandoEscolherApostilaParaCupom = false;
                 if (verificarSeEstaNaPaginaDetalheApostila() && apostilaSelecionada) {
                     abrirDetalheApostilaPorId(apostilaSelecionada.id, false);
                 }
-                alert("👑 Assinatura Matéria Premium confirmada e salva na nuvem!");
+                mostrarToast('success', 'Sua assinatura Premium foi confirmada e salva na nuvem.', { title: 'Assinatura realizada' });
             } else {
                 const novaBib = Array.from(new Set([...(perfilFirestore.bibliotecaIds || []), apostilaSelecionada.id]));
                 await atualizarDadosUsuarioNoFirestore({ bibliotecaIds: novaBib });
+                mostrarToast('success', `A apostila “${apostilaSelecionada.titulo}” foi adicionada à sua Biblioteca.`, { title: 'Compra confirmada' });
                 abrirDetalheApostilaPorId(apostilaSelecionada.id, true);
                 iniciarLeituraPDF(false);
             }
@@ -677,7 +683,7 @@ let aguardandoEscolherApostilaParaCupom = false;
                 renderizarPaginaPDF(pageNum);
             }).catch(err => {
                 console.error("Erro no PDF:", err);
-                alert('Não foi possível carregar esta apostila. Verifique a URL do PDF e a configuração de CORS do servidor.');
+                mostrarToast('error', 'Não foi possível carregar esta apostila. Verifique o arquivo e tente novamente.', { title: 'Erro ao abrir apostila' });
             });
         }
 
@@ -830,6 +836,9 @@ let aguardandoEscolherApostilaParaCupom = false;
             if (!listaAtual.some(s => s.id === simuladoPendente.id)) {
                 listaAtual.push(simuladoPendente);
                 await atualizarDadosUsuarioNoFirestore({ simuladosAdicionados: listaAtual });
+                mostrarToast('success', `O simulado “${simuladoPendente.nome}” foi adicionado ao seu painel.`, { title: 'Simulado adicionado' });
+            } else {
+                mostrarToast('info', 'Este simulado já está disponível no seu painel.', { title: 'Simulado já adicionado' });
             }
             renderizarSimuladosSalvosNoLobby();
             voltarParaLobbySimulado();
@@ -882,6 +891,7 @@ let aguardandoEscolherApostilaParaCupom = false;
                 await atualizarDadosUsuarioNoFirestore({ simuladosAdicionados: novaLista });
                 idSimuladoParaRemover = null;
                 renderizarSimuladosSalvosNoLobby();
+                mostrarToast('success', 'O simulado foi removido do seu painel.', { title: 'Simulado removido' });
             }
         }
 
@@ -942,7 +952,7 @@ let aguardandoEscolherApostilaParaCupom = false;
                 }
 
                 if (todas.length === 0) {
-                    alert("Este simulado ainda não possui questões cadastradas no banco de dados!");
+                    mostrarToast('warning', 'Este simulado ainda não possui questões cadastradas.', { title: 'Simulado indisponível' });
                     voltarParaLobbySimulado();
                     return;
                 }
@@ -951,7 +961,7 @@ let aguardandoEscolherApostilaParaCupom = false;
                 listaQuestoes = todas.slice(0, Math.min(configSimulado.questoes, todas.length));
             } catch (e) {
                 console.error("Erro ao carregar questões:", e);
-                alert("Erro de conexão com o banco de dados.");
+                mostrarToast('error', 'Não foi possível carregar as questões do simulado.', { title: 'Erro de conexão' });
                 voltarParaLobbySimulado();
                 return;
             }
@@ -1081,8 +1091,14 @@ let aguardandoEscolherApostilaParaCupom = false;
             visor.innerText = `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
         }
 
-        function abandonarSimulado() {
-            if (confirm("Deseja desistir do simulado atual?")) {
+        async function abandonarSimulado() {
+            const confirmado = await confirmarAcao({
+                title: 'Desistir do simulado?',
+                message: 'Seu progresso nesta tentativa será perdido e você voltará para a tela de simulados.',
+                confirmLabel: 'Desistir',
+                tone: 'danger'
+            });
+            if (confirmado) {
                 if (relogioIntervalo) clearInterval(relogioIntervalo);
                 voltarParaLobbySimulado();
             }
