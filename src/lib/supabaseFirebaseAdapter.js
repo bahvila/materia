@@ -98,7 +98,7 @@ function simuladoFromRow(row) {
     descricaoVisivel: row.descricao || '',
     nome: row.descricao ? `${row.titulo}: ${row.descricao}` : row.titulo,
     capaUrl: storagePublicUrl('apostila-capas', row.imagem_path),
-    questoes_banca: row.quantidade_questoes || config.questoes_banca || 20,
+    questoes_banca: row.quantidade_questoes || row.questoes?.length || config.questoes_banca || 20,
     tempo_banca: row.duracao_minutos || config.tempo_banca || 60,
     filtros: config.filtros || {},
     ativo: row.status === 'publicado',
@@ -139,8 +139,9 @@ function questionFromRow(row) {
   }
 }
 
-function questionToRow(value) {
+function questionToStored(value, id = crypto.randomUUID()) {
   return {
+    id,
     enunciado: value.Enunciado || value.enunciado || '',
     comentario: value.Explicacao || value.comentario || '',
     dificuldade: value.dificuldade || null,
@@ -152,8 +153,14 @@ function questionToRow(value) {
     bloco: value.bloco || null,
     status: value.ativo === false ? 'arquivado' : 'publicado',
     metadata: value,
-    updated_at: new Date().toISOString(),
   }
+}
+
+function matchesQuestionFilters(question, filters = []) {
+  return filters.every(([field, operator, value]) => {
+    if (field === 'simuladoId' || operator !== '==') return true
+    return questionFromRow(question)[field] === value
+  })
 }
 
 function couponFromRow(row) {
@@ -259,36 +266,51 @@ async function ensureSimulado(identifier) {
   return data
 }
 
+async function saveSimuladoQuestions(simulado, questions) {
+  const { error } = await requireSupabase().from('simulados').update({
+    questoes: questions,
+    quantidade_questoes: questions.length,
+    updated_at: new Date().toISOString(),
+  }).eq('id', simulado.id)
+  throwIfError(error)
+}
+
+async function findStoredQuestion(collectionName, questionId) {
+  if (collectionName !== 'questoes') {
+    const simulado = await findSimulado(collectionName)
+    const question = (simulado?.questoes || []).find((item) => item.id === questionId)
+    return { simulado, question }
+  }
+
+  const { data, error } = await requireSupabase().from('simulados').select('id,slug,questoes')
+  throwIfError(error)
+  for (const simulado of data || []) {
+    const question = (simulado.questoes || []).find((item) => item.id === questionId)
+    if (question) return { simulado, question }
+  }
+  return { simulado: null, question: null }
+}
+
 async function listQuestions(collectionName, filters = [], limitValue) {
   const client = requireSupabase()
   let rows = []
   if (collectionName === 'questoes') {
-    let query = client.from('questions').select('*')
-    for (const [field, operator, value] of filters) {
-      if (field === 'simuladoId' && operator === '==') {
-        const simulado = await findSimulado(value)
-        if (!simulado) return []
-        const joined = await client.from('simulado_questions').select('questions(*)').eq('simulado_id', simulado.id)
-        throwIfError(joined.error)
-        rows = (joined.data || []).map((item) => item.questions)
-        return rows.slice(0, limitValue || rows.length).map(questionFromRow)
-      }
-      query = operator === '==' ? query.eq(field, value) : query
+    const simuladoFilter = filters.find(([field, operator]) => field === 'simuladoId' && operator === '==')
+    if (simuladoFilter) {
+      const simulado = await findSimulado(simuladoFilter[2])
+      rows = simulado?.questoes || []
+    } else {
+      const result = await client.from('simulados').select('questoes')
+      throwIfError(result.error)
+      rows = (result.data || []).flatMap((simulado) => simulado.questoes || [])
     }
-    if (limitValue) query = query.limit(limitValue)
-    const result = await query
-    throwIfError(result.error)
-    rows = result.data || []
   } else {
     const simulado = await findSimulado(collectionName)
     if (!simulado) return []
-    let query = client.from('simulado_questions').select('questions(*)').eq('simulado_id', simulado.id).order('ordem')
-    if (limitValue) query = query.limit(limitValue)
-    const result = await query
-    throwIfError(result.error)
-    rows = (result.data || []).map((item) => item.questions)
+    rows = simulado.questoes || []
   }
-  return rows.map(questionFromRow)
+  rows = rows.filter((question) => matchesQuestionFilters(question, filters))
+  return rows.slice(0, limitValue || rows.length).map(questionFromRow)
 }
 
 class CollectionReference {
@@ -361,13 +383,13 @@ class CollectionReference {
       await saveProfile(this.parentUserId, { historico: [record, ...(profile?.historico || [])].slice(0, 50) })
       return this.doc(record.id)
     }
-    const simulado = this.name === 'questoes' ? null : await ensureSimulado(this.name)
-    const { data, error } = await client.from('questions').insert(questionToRow(value)).select('id').single()
-    throwIfError(error)
-    if (simulado) {
-      throwIfError((await client.from('simulado_questions').insert({ simulado_id: simulado.id, question_id: data.id })).error)
+    if (this.name === 'questoes') {
+      throw new Error('Informe o simulado da questão; questões agora pertencem diretamente a um simulado.')
     }
-    return this.doc(data.id)
+    const simulado = await ensureSimulado(this.name)
+    const question = questionToStored(value)
+    await saveSimuladoQuestions(simulado, [...(simulado.questoes || []), question])
+    return this.doc(question.id)
   }
 }
 
@@ -399,9 +421,8 @@ class DocumentReference {
       throwIfError(error)
       return new DocumentSnapshot(data?.id || this.id, data ? couponFromRow(data) : null)
     }
-    const { data, error } = await client.from('questions').select('*').eq('id', this.id).maybeSingle()
-    throwIfError(error)
-    return new DocumentSnapshot(this.id, data ? questionFromRow(data) : null)
+    const { question } = await findStoredQuestion(this.collectionName, this.id)
+    return new DocumentSnapshot(this.id, question ? questionFromRow(question) : null)
   }
 
   async set(value, options = {}) {
@@ -420,10 +441,21 @@ class DocumentReference {
       throwIfError(error)
       return
     }
-    const table = this.collectionName === 'apostilas' ? 'apostilas' : 'questions'
-    const mapper = table === 'apostilas' ? apostilaToRow : questionToRow
-    const { error } = await client.from(table).upsert({ id: this.id, ...mapper(value) })
-    throwIfError(error)
+    if (this.collectionName === 'apostilas') {
+      const { error } = await client.from('apostilas').upsert({ id: this.id, ...apostilaToRow(value) })
+      throwIfError(error)
+      return
+    }
+    if (this.collectionName === 'questoes') {
+      throw new Error('Informe o simulado da questão; questões agora pertencem diretamente a um simulado.')
+    }
+    const simulado = await ensureSimulado(this.collectionName)
+    const questions = [...(simulado.questoes || [])]
+    const index = questions.findIndex((item) => item.id === this.id)
+    const question = questionToStored(value, this.id)
+    if (index >= 0) questions[index] = question
+    else questions.push(question)
+    await saveSimuladoQuestions(simulado, questions)
   }
 
   async update(value) {
@@ -436,7 +468,13 @@ class DocumentReference {
     const client = requireSupabase()
     const table = this.collectionName === 'apostilas' ? 'apostilas'
       : this.collectionName === 'simulados_info' ? 'simulados'
-        : this.collectionName === 'cupons_sistema' ? 'coupons' : 'questions'
+        : this.collectionName === 'cupons_sistema' ? 'coupons' : null
+    if (!table) {
+      const { simulado } = await findStoredQuestion(this.collectionName, this.id)
+      if (!simulado) return
+      await saveSimuladoQuestions(simulado, (simulado.questoes || []).filter((item) => item.id !== this.id))
+      return
+    }
     const field = this.collectionName === 'simulados_info' ? (UUID_PATTERN.test(this.id) ? 'id' : 'slug')
       : this.collectionName === 'cupons_sistema' ? 'codigo' : 'id'
     const { error } = await client.from(table).delete().eq(field, field === 'codigo' ? this.id.toUpperCase() : this.id)

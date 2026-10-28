@@ -54,29 +54,9 @@ create table if not exists public.simulados (
   descricao text, imagem_path text, categoria text, nivel text, duracao_minutos integer,
   quantidade_questoes integer, is_premium boolean not null default false,
   status text not null default 'rascunho', configuracao jsonb not null default '{}'::jsonb,
+  questoes jsonb not null default '[]'::jsonb,
   created_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now(), published_at timestamptz
-);
-
-create table if not exists public.questions (
-  id uuid primary key default gen_random_uuid(), enunciado text not null, comentario text,
-  dificuldade text, assunto text, subsecao text, secao text, capitulo text, modulo text, bloco text,
-  status text not null default 'rascunho', metadata jsonb not null default '{}'::jsonb,
-  created_by uuid references public.profiles(id) on delete set null,
-  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
-);
-
-create table if not exists public.question_options (
-  id uuid primary key default gen_random_uuid(), question_id uuid not null references public.questions(id) on delete cascade,
-  letra text, texto text not null, correta boolean not null default false, ordem integer not null,
-  created_at timestamptz not null default now(), unique(question_id, letra), unique(question_id, ordem)
-);
-
-create table if not exists public.simulado_questions (
-  simulado_id uuid not null references public.simulados(id) on delete cascade,
-  question_id uuid not null references public.questions(id) on delete cascade,
-  ordem integer, peso numeric(8,2) not null default 1, created_at timestamptz not null default now(),
-  primary key(simulado_id, question_id), unique(simulado_id, ordem)
 );
 
 create table if not exists public.coupons (
@@ -152,14 +132,8 @@ create table if not exists public.attempts (
   simulado_id uuid not null references public.simulados(id) on delete restrict,
   modo text not null, status text not null, total_questoes integer not null default 0,
   total_acertos integer not null default 0, nota numeric(8,2), duracao_segundos integer,
-  configuracao jsonb not null default '{}'::jsonb, started_at timestamptz not null default now(), finished_at timestamptz
-);
-
-create table if not exists public.attempt_answers (
-  id uuid primary key default gen_random_uuid(), attempt_id uuid not null references public.attempts(id) on delete cascade,
-  question_id uuid not null references public.questions(id) on delete restrict,
-  selected_option_id uuid references public.question_options(id) on delete set null,
-  correta boolean, tempo_segundos integer, answered_at timestamptz not null default now(), unique(attempt_id, question_id)
+  configuracao jsonb not null default '{}'::jsonb, respostas jsonb not null default '[]'::jsonb,
+  started_at timestamptz not null default now(), finished_at timestamptz
 );
 
 create table if not exists public.admin_audit_logs (
@@ -172,7 +146,6 @@ create index if not exists subscriptions_user_status_idx on public.subscriptions
 create index if not exists apostilas_status_idx on public.apostilas(status, published_at desc);
 create index if not exists apostilas_tags_idx on public.apostilas using gin(tags);
 create index if not exists simulados_status_idx on public.simulados(status, published_at desc);
-create index if not exists questions_taxonomy_idx on public.questions(assunto, secao, modulo);
 create index if not exists orders_user_created_idx on public.orders(user_id, created_at desc);
 create index if not exists payments_user_created_idx on public.payments(user_id, created_at desc);
 create index if not exists user_apostilas_user_idx on public.user_apostilas(user_id, revoked_at, expires_at);
@@ -184,9 +157,6 @@ alter table public.payment_customers enable row level security;
 alter table public.subscriptions enable row level security;
 alter table public.apostilas enable row level security;
 alter table public.simulados enable row level security;
-alter table public.questions enable row level security;
-alter table public.question_options enable row level security;
-alter table public.simulado_questions enable row level security;
 alter table public.coupons enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
@@ -196,7 +166,6 @@ alter table public.coupon_redemptions enable row level security;
 alter table public.user_apostilas enable row level security;
 alter table public.reading_progress enable row level security;
 alter table public.attempts enable row level security;
-alter table public.attempt_answers enable row level security;
 alter table public.admin_audit_logs enable row level security;
 
 insert into storage.buckets(id, name, public, file_size_limit, allowed_mime_types) values

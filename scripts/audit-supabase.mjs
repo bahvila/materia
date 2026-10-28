@@ -20,10 +20,17 @@ await page.waitForTimeout(3_000)
 
 const report = await page.evaluate(async () => {
   if (!window.supabase) return { configured: false, tables: [] }
-  const tables = ['plans', 'apostilas', 'simulados', 'questions', 'profiles', 'subscriptions']
+  const tables = [
+    ['plans', 'id'],
+    ['apostilas', 'id,capa_path,pdf_path'],
+    ['simulados', 'id,questoes'],
+    ['profiles', 'id,metadata'],
+    ['subscriptions', 'id'],
+    ['attempts', 'id,respostas'],
+  ]
   const results = []
-  for (const table of tables) {
-    const { data, error } = await window.supabase.from(table).select('id').limit(1)
+  for (const [table, columns] of tables) {
+    const { data, error } = await window.supabase.from(table).select(columns).limit(1)
     results.push({
       table,
       status: error ? 'error' : 'ok',

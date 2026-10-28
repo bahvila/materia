@@ -43,14 +43,6 @@ create policy apostilas_public_read on public.apostilas for select to anon, auth
 drop policy if exists simulados_public_read on public.simulados;
 create policy simulados_public_read on public.simulados for select to anon, authenticated using (status = 'publicado');
 
--- Questões são lidas por usuários autenticados. O código decide quando mostrar o gabarito.
-drop policy if exists questions_authenticated_read on public.questions;
-create policy questions_authenticated_read on public.questions for select to authenticated using (status = 'publicado');
-drop policy if exists question_options_authenticated_read on public.question_options;
-create policy question_options_authenticated_read on public.question_options for select to authenticated using (true);
-drop policy if exists simulado_questions_authenticated_read on public.simulado_questions;
-create policy simulado_questions_authenticated_read on public.simulado_questions for select to authenticated using (true);
-
 -- Dados do próprio usuário
 drop policy if exists subscriptions_own_read on public.subscriptions;
 create policy subscriptions_own_read on public.subscriptions for select to authenticated using (user_id = auth.uid());
@@ -71,10 +63,6 @@ using (user_id = auth.uid()) with check (user_id = auth.uid());
 drop policy if exists attempts_own_all on public.attempts;
 create policy attempts_own_all on public.attempts for all to authenticated
 using (user_id = auth.uid()) with check (user_id = auth.uid());
-drop policy if exists attempt_answers_own_all on public.attempt_answers;
-create policy attempt_answers_own_all on public.attempt_answers for all to authenticated
-using (exists (select 1 from public.attempts where attempts.id = attempt_answers.attempt_id and attempts.user_id = auth.uid()))
-with check (exists (select 1 from public.attempts where attempts.id = attempt_answers.attempt_id and attempts.user_id = auth.uid()));
 
 -- Administração de conteúdo. Para ativar, altere profiles.tipo_usuario para admin.
 drop policy if exists plans_admin_all on public.plans;
@@ -83,12 +71,6 @@ drop policy if exists apostilas_admin_all on public.apostilas;
 create policy apostilas_admin_all on public.apostilas for all to authenticated using (public.is_admin()) with check (public.is_admin());
 drop policy if exists simulados_admin_all on public.simulados;
 create policy simulados_admin_all on public.simulados for all to authenticated using (public.is_admin()) with check (public.is_admin());
-drop policy if exists questions_admin_all on public.questions;
-create policy questions_admin_all on public.questions for all to authenticated using (public.is_admin()) with check (public.is_admin());
-drop policy if exists question_options_admin_all on public.question_options;
-create policy question_options_admin_all on public.question_options for all to authenticated using (public.is_admin()) with check (public.is_admin());
-drop policy if exists simulado_questions_admin_all on public.simulado_questions;
-create policy simulado_questions_admin_all on public.simulado_questions for all to authenticated using (public.is_admin()) with check (public.is_admin());
 drop policy if exists coupons_admin_all on public.coupons;
 create policy coupons_admin_all on public.coupons for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
