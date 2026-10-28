@@ -5,6 +5,10 @@ import { PortalHeader } from '../components/portal/PortalHeader'
 import { portalModalComponents } from '../components/portal/portalComponentRegistry'
 import { navigatePortal, sectionFromPath } from './portalNavigation'
 import { installSupabaseFirebaseAdapter } from '../lib/supabaseFirebaseAdapter'
+import { ToastProvider } from '../components/feedback/ToastProvider'
+import { installToastBridge } from '../lib/toast'
+import { SystemConfirmProvider } from '../components/feedback/SystemConfirmProvider'
+import { installSystemConfirmBridge } from '../lib/systemConfirm'
 
 function mountPortalComponents(container) {
   const roots = []
@@ -50,6 +54,8 @@ export function LegacyPage({ page }) {
 
         requestAnimationFrame(() => {
           if (!active) return
+          installToastBridge()
+          installSystemConfirmBridge()
           installSupabaseFirebaseAdapter()
           if (page === 'portal' && containerRef.current) {
             componentRoots = mountPortalComponents(containerRef.current)
@@ -103,5 +109,11 @@ export function LegacyPage({ page }) {
   }, [page])
 
   if (error) return <p style={{ padding: 24 }}>{error}</p>
-  return <div ref={containerRef} dangerouslySetInnerHTML={{ __html: markup }} />
+  return (
+    <>
+      <ToastProvider />
+      <SystemConfirmProvider />
+      <div ref={containerRef} dangerouslySetInnerHTML={{ __html: markup }} />
+    </>
+  )
 }

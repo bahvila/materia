@@ -4,6 +4,22 @@
         const auth = firebase.auth();
         const adminSections = ['apostilas', 'simulados', 'cupons'];
 
+        function definirStatus(id, mensagem = '', tipo = 'success') {
+            const element = document.getElementById(id);
+            if (!element) return;
+            element.textContent = mensagem;
+            element.dataset.statusType = tipo;
+        }
+
+        function sincronizarPortal(tipo) {
+            try {
+                if (tipo === 'apostilas') window.parent.carregarApostilasDoFirebase?.();
+                if (tipo === 'simulados') window.parent.carregarSimuladosDoFirebase?.();
+            } catch (error) {
+                console.warn('Não foi possível sincronizar o catálogo do portal:', error);
+            }
+        }
+
         function secaoAdminAtual() {
             try {
                 const parentMatch = window.parent.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons)/);
@@ -32,20 +48,23 @@
             const email = document.getElementById('adm-login-email').value.trim();
             const senha = document.getElementById('adm-login-senha').value;
             if (!email || !senha) {
-                alert("Preencha o e-mail e a senha de administrador.");
+                mostrarToast('warning', 'Preencha o e-mail e a senha de administrador.', { title: 'Dados obrigatórios' });
                 return;
             }
             auth.signInWithEmailAndPassword(email, senha)
                 .then(() => {
                     document.getElementById('adm-login-senha').value = "";
+                    mostrarToast('success', 'Autenticação concluída. Validando suas permissões.', { title: 'Login realizado' });
                 })
                 .catch(err => {
-                    alert("Erro ao autenticar: verifique seu e-mail e senha no Supabase Auth.\n\nDetalhe: " + err.message);
+                    mostrarToast('error', `Verifique seu e-mail e senha. ${err.message || ''}`.trim(), { title: 'Erro ao autenticar' });
                 });
         }
 
         function fazerLogoutAdmin() {
-            auth.signOut();
+            auth.signOut()
+                .then(() => mostrarToast('info', 'A sessão administrativa foi encerrada.', { title: 'Você saiu da conta' }))
+                .catch(error => mostrarToast('error', error.message, { title: 'Erro ao encerrar sessão' }));
         }
 
         auth.onAuthStateChanged(async user => {
@@ -67,6 +86,7 @@
                             <h2>Acesso administrativo não autorizado</h2>
                             <p>${error ? 'Não foi possível confirmar sua permissão agora.' : 'Sua conta continua conectada, mas não possui perfil de administrador.'}</p>
                         </section>`;
+                    mostrarToast('error', error ? 'Não foi possível confirmar sua permissão.' : 'Sua conta não possui acesso administrativo.', { title: 'Acesso não autorizado' });
                     return;
                 }
                 boxLogin.style.display = 'none';
@@ -91,14 +111,16 @@
                 ano: "2026",
                 ativo: true
             };
-            if (!nova.titulo) { alert("Preencha o título."); return; }
+            if (!nova.titulo) { mostrarToast('warning', 'Preencha o título da apostila.', { title: 'Título obrigatório' }); return; }
 
             try {
                 await db.collection("apostilas").add(nova);
-                document.getElementById('status-ap').innerText = "✅ Apostila publicada com sucesso!";
-                carregarListasAdmin();
+                definirStatus('status-ap', 'Apostila publicada com sucesso.');
+                mostrarToast('success', `A apostila “${nova.titulo}” foi criada e publicada.`, { title: 'Apostila criada' });
+                await carregarListasAdmin();
+                sincronizarPortal('apostilas');
             } catch (e) {
-                alert("Erro ao salvar: " + e.message);
+                mostrarToast('error', e.message || 'Não foi possível salvar a apostila.', { title: 'Erro ao criar apostila' });
             }
         }
 
@@ -134,7 +156,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
             document.getElementById('adm-sim-tempo').value = '60';
             document.getElementById('adm-sim-status').value = 'rascunho';
             preencherFiltrosQuestoes();
-            document.getElementById('status-sim').innerText = '';
+            definirStatus('status-sim');
             document.getElementById('adm-sim-titulo').focus();
         }
 
@@ -148,7 +170,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
             const id = document.getElementById('adm-sim-id').value;
             const titulo = document.getElementById('adm-sim-titulo').value.trim();
             const slug = document.getElementById('adm-sim-slug').value.trim() || gerarSlug(titulo);
-            if (!titulo || !slug) return alert('Informe o título do simulado.');
+            if (!titulo || !slug) return mostrarToast('warning', 'Informe o título do simulado.', { title: 'Título obrigatório' });
 
             const filtros = {};
             camposTaxonomia.forEach(campo => {
@@ -170,15 +192,17 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
                 ? window.supabase.from('simulados').update(row).eq('id', id).select('id').single()
                 : window.supabase.from('simulados').insert(row).select('id').single();
             const { data, error } = await query;
-            if (error) return alert('Erro ao salvar simulado: ' + error.message);
+            if (error) return mostrarToast('error', error.message, { title: 'Erro ao salvar simulado' });
             document.getElementById('adm-sim-id').value = data.id;
-            document.getElementById('status-sim').innerText = '✅ Simulado salvo com sucesso.';
+            definirStatus('status-sim', 'Simulado salvo com sucesso.');
+            mostrarToast('success', `O simulado “${titulo}” foi ${id ? 'atualizado' : 'criado'} com sucesso.`, { title: id ? 'Simulado atualizado' : 'Simulado criado' });
             await carregarListasAdmin();
+            sincronizarPortal('simulados');
         }
 
         async function editarSimuladoNaCaixa(id) {
             const { data, error } = await window.supabase.from('simulados').select('*').eq('id', id).single();
-            if (error) return alert('Erro ao carregar simulado: ' + error.message);
+            if (error) return mostrarToast('error', error.message, { title: 'Erro ao carregar simulado' });
             document.getElementById('adm-sim-id').value = data.id;
             document.getElementById('adm-sim-titulo').value = data.titulo;
             document.getElementById('adm-sim-slug').value = data.slug;
@@ -217,7 +241,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
                                 ${visivel ? 'Ocultar' : 'Mostrar'}
                             </button>
                             <button onclick="excluirItemBanco('apostilas', '${doc.id}')" style="padding:6px 10px; border-radius:6px; border:none; background:#C9302C; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">
-                                🗑️
+                                Excluir
                             </button>
                         </div>
                     </div>`;
@@ -247,7 +271,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
                         <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
                             <button onclick="editarSimuladoNaCaixa('${simulado.id}')" style="padding:6px 10px; border-radius:6px; border:1px solid var(--marrom-header); background:#fff; color:var(--marrom-header); cursor:pointer; font-weight:700; font-size:12px;">Editar</button>
                             <button onclick="alternarPublicacaoSimulado('${simulado.id}', '${simulado.status}')" style="padding:6px 10px; border-radius:6px; border:1px solid #888; cursor:pointer; font-weight:700; font-size:12px;">${publicado ? 'Despublicar' : 'Publicar'}</button>
-                            <button onclick="excluirSimulado('${simulado.id}', '${simulado.titulo.replace(/'/g, "\\'")}')" style="padding:6px 10px; border-radius:6px; border:none; background:#C9302C; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">🗑️</button>
+                            <button onclick="excluirSimulado('${simulado.id}', '${simulado.titulo.replace(/'/g, "\\'")}')" style="padding:6px 10px; border-radius:6px; border:none; background:#C9302C; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">Excluir</button>
                         </div>
                     </div>`;
                 }).join('');
@@ -267,27 +291,58 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
                 status: novoStatus,
                 published_at: novoStatus === 'publicado' ? new Date().toISOString() : null
             }).eq('id', id);
-            if (error) return alert('Erro ao atualizar simulado: ' + error.message);
-            carregarListasAdmin();
+            if (error) return mostrarToast('error', error.message, { title: 'Erro ao atualizar simulado' });
+            mostrarToast('success', `O simulado foi ${novoStatus === 'publicado' ? 'publicado' : 'movido para rascunho'}.`, { title: 'Status atualizado' });
+            await carregarListasAdmin();
+            sincronizarPortal('simulados');
         }
 
         async function excluirSimulado(id, titulo) {
-            if (!confirm(`Excluir permanentemente o simulado "${titulo}"?`)) return;
+            const confirmado = await confirmarAcao({
+                title: 'Excluir simulado?',
+                message: `O simulado “${titulo}” será removido permanentemente. Esta ação não pode ser desfeita.`,
+                confirmLabel: 'Excluir simulado',
+                tone: 'danger'
+            });
+            if (!confirmado) return;
             const { error } = await window.supabase.from('simulados').delete().eq('id', id);
-            if (error) return alert('Erro ao excluir simulado: ' + error.message);
+            if (error) return mostrarToast('error', error.message, { title: 'Erro ao excluir simulado' });
+            mostrarToast('success', `O simulado “${titulo}” foi excluído.`, { title: 'Simulado excluído' });
             if (document.getElementById('adm-sim-id').value === id) novoSimulado();
-            carregarListasAdmin();
+            await carregarListasAdmin();
+            sincronizarPortal('simulados');
         }
 
         async function alternarVisibilidade(colecao, docId, estadoAtual) {
-            await db.collection(colecao).doc(docId).update({ ativo: !estadoAtual });
-            carregarListasAdmin();
+            try {
+                await db.collection(colecao).doc(docId).update({ ativo: !estadoAtual });
+                mostrarToast('success', `O item agora está ${estadoAtual ? 'oculto' : 'visível'} no site.`, { title: 'Visibilidade atualizada' });
+                await carregarListasAdmin();
+                sincronizarPortal(colecao);
+            } catch (error) {
+                mostrarToast('error', error.message, { title: 'Erro ao atualizar item' });
+            }
         }
 
         async function excluirItemBanco(colecao, docId) {
-            if (!confirm(`Tem certeza que deseja excluir o item '${docId}' da vitrine do site?`)) return;
-            await db.collection(colecao).doc(docId).delete();
-            carregarListasAdmin();
+            const nomes = { apostilas: 'apostila', cupons_sistema: 'cupom' };
+            const nomeItem = nomes[colecao] || 'item';
+            const confirmado = await confirmarAcao({
+                title: `Excluir ${nomeItem}?`,
+                message: `O ${nomeItem} “${docId}” será removido permanentemente. Esta ação não pode ser desfeita.`,
+                confirmLabel: `Excluir ${nomeItem}`,
+                tone: 'danger'
+            });
+            if (!confirmado) return;
+            try {
+                await db.collection(colecao).doc(docId).delete();
+                mostrarToast('success', 'O item foi excluído permanentemente.', { title: 'Item excluído' });
+                if (colecao === 'cupons_sistema') await carregarCuponsNoAdmin();
+                else await carregarListasAdmin();
+                sincronizarPortal(colecao);
+            } catch (error) {
+                mostrarToast('error', error.message, { title: 'Erro ao excluir item' });
+            }
         }
 
 function alternarCamposTipoCupomAdmin() {
@@ -304,10 +359,8 @@ function alternarCamposTipoCupomAdmin() {
             const cron1Input = parseInt(document.getElementById('adm-cupom-cron1').value);
             const cron2Input = parseInt(document.getElementById('adm-cupom-cron2').value);
             const descInput = parseInt(document.getElementById('adm-cupom-desconto').value);
-            const status = document.getElementById('status-cupom-admin');
-
             if (!codigo) {
-                alert("Digite um código alfanumérico (máx 10 caracteres).");
+                mostrarToast('warning', 'Digite um código alfanumérico de até 10 caracteres.', { title: 'Código inválido' });
                 return;
             }
 
@@ -338,11 +391,12 @@ function alternarCamposTipoCupomAdmin() {
                     ativoParaObter: true
                 });
 
-                status.innerText = `✅ Cupom '${codigo}' criado com sucesso!`;
+                definirStatus('status-cupom-admin', `Cupom '${codigo}' criado com sucesso.`);
+                mostrarToast('success', `O cupom ${codigo} foi criado e já está disponível.`, { title: 'Cupom criado' });
                 document.getElementById('adm-cupom-codigo').value = "";
-                carregarListasAdmin();
+                await carregarCuponsNoAdmin();
             } catch (e) {
-                alert("Erro ao criar cupom: " + e.message);
+                mostrarToast('error', e.message || 'Não foi possível criar o cupom.', { title: 'Erro ao criar cupom' });
             }
         }
 
@@ -391,7 +445,7 @@ function alternarCamposTipoCupomAdmin() {
                             ${c.ativoParaObter !== false ? 'Desativar Obtenção' : 'Ativar Obtenção'}
                         </button>
                         <button onclick="excluirItemBanco('cupons_sistema', '${c.codigo}')" style="padding:6px 10px; border-radius:6px; border:none; background:#C9302C; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">
-                            🗑️
+                            Excluir
                         </button>
                     </div>
                 </div>`;
@@ -399,8 +453,13 @@ function alternarCamposTipoCupomAdmin() {
         }
 
         async function alternarObtencaoCupom(codigo, estadoAtual) {
-            await db.collection("cupons_sistema").doc(codigo).update({ ativoParaObter: !estadoAtual });
-            carregarCuponsNoAdmin();
+            try {
+                await db.collection("cupons_sistema").doc(codigo).update({ ativoParaObter: !estadoAtual });
+                mostrarToast('success', `A obtenção do cupom ${codigo} foi ${estadoAtual ? 'desativada' : 'ativada'}.`, { title: 'Cupom atualizado' });
+                await carregarCuponsNoAdmin();
+            } catch (error) {
+                mostrarToast('error', error.message, { title: 'Erro ao atualizar cupom' });
+            }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -416,11 +475,11 @@ function alternarCamposTipoCupomAdmin() {
             const mode = document.getElementById('adm-csv-mode').value;
             const encoding = document.getElementById('adm-csv-encoding').value;
             const status = document.getElementById('status-importacao-csv');
-            if (!input.files.length || !simId) return alert('Selecione um simulado e um arquivo CSV.');
+            if (!input.files.length || !simId) return mostrarToast('warning', 'Selecione um simulado e um arquivo CSV.', { title: 'Importação incompleta' });
 
             const { data: simulado, error: loadError } = await window.supabase
                 .from('simulados').select('id,titulo,questoes').eq('id', simId).single();
-            if (loadError) return alert('Erro ao carregar simulado: ' + loadError.message);
+            if (loadError) return mostrarToast('error', loadError.message, { title: 'Erro ao carregar simulado' });
             status.innerText = 'Lendo e validando a planilha...';
 
             Papa.parse(input.files[0], {
@@ -456,7 +515,8 @@ function alternarCamposTipoCupomAdmin() {
                         }];
                     });
                     if (!novasQuestoes.length) {
-                        status.innerText = '⚠️ Nenhuma questão válida encontrada.';
+                        definirStatus('status-importacao-csv', 'Nenhuma questão válida encontrada.', 'warning');
+                        mostrarToast('warning', 'O arquivo não contém questões válidas para importar.', { title: 'Nenhuma questão encontrada' });
                         return;
                     }
                     const questoes = mode === 'append' ? [...(simulado.questoes || []), ...novasQuestoes] : novasQuestoes;
@@ -465,12 +525,19 @@ function alternarCamposTipoCupomAdmin() {
                         questoes, quantidade_questoes: questoes.length, updated_at: new Date().toISOString()
                     }).eq('id', simulado.id);
                     if (error) {
-                        status.innerText = '❌ Erro: ' + error.message;
+                        definirStatus('status-importacao-csv', 'Erro: ' + error.message, 'error');
+                        mostrarToast('error', error.message, { title: 'Erro ao importar questões' });
                         return;
                     }
-                    status.innerText = `✅ ${novasQuestoes.length} questões importadas. Total: ${questoes.length}.`;
+                    definirStatus('status-importacao-csv', `${novasQuestoes.length} questões importadas. Total: ${questoes.length}.`);
+                    mostrarToast('success', `${novasQuestoes.length} questões foram importadas. O simulado agora possui ${questoes.length}.`, { title: 'Importação concluída' });
                     await carregarListasAdmin();
                     await editarSimuladoNaCaixa(simulado.id);
-                }
+                    sincronizarPortal('simulados');
+                },
+                error: (error) => {
+                    definirStatus('status-importacao-csv', 'Não foi possível ler o arquivo.', 'error');
+                    mostrarToast('error', error.message || 'Não foi possível ler o arquivo CSV.', { title: 'Erro na planilha' });
+                },
             });
         }
