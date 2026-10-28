@@ -20,7 +20,7 @@
 
   <main>
     <section id="admin-page-apostilas" class="admin-page active">
-      <div class="admin-page-heading"><div><p>Conteúdo</p><h2>Apostilas</h2><span>Cadastre materiais e controle o catálogo.</span></div></div>
+      <div class="admin-page-heading"><div><p>Conteúdo</p><h2>Apostilas</h2></div></div>
       <div class="admin-two-columns">
         <article class="card-admin">
           <h3>Nova apostila</h3>
@@ -40,7 +40,7 @@
     </section>
 
     <section id="admin-page-simulados" class="admin-page">
-      <div class="admin-page-heading"><div><p>Conteúdo</p><h2>Simulados</h2><span>Crie, publique e importe questões sem informar IDs.</span></div><button class="admin-secondary-button" onclick="novoSimulado()">+ Novo simulado</button></div>
+      <div class="admin-page-heading"><div><p>Conteúdo</p><h2>Simulados</h2></div><button class="admin-secondary-button" onclick="novoSimulado()">+ Novo simulado</button></div>
       <article class="card-admin">
         <h3>Dados do simulado</h3><input type="hidden" id="adm-sim-id">
         <div class="admin-form-grid two"><div><label>Título</label><input type="text" id="adm-sim-titulo" placeholder="Ex.: Enfermagem"></div><div><label>Descrição</label><input type="text" id="adm-sim-desc" placeholder="Ex.: Anatomia sistêmica"></div></div>
@@ -63,7 +63,7 @@
     </section>
 
     <section id="admin-page-cupons" class="admin-page">
-      <div class="admin-page-heading"><div><p>Benefícios</p><h2>Cupons</h2><span>Crie códigos promocionais e controle sua disponibilidade.</span></div></div>
+      <div class="admin-page-heading"><div><p>Benefícios</p><h2>Cupons</h2></div></div>
       <div class="admin-two-columns">
         <article class="card-admin"><h3>Novo cupom</h3><div class="admin-form-grid two">
           <div><label>Código</label><input type="text" id="adm-cupom-codigo" maxlength="10" placeholder="Ex.: ANAC50" oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()"></div><div><label>Benefício</label><select id="adm-cupom-tipo" onchange="alternarCamposTipoCupomAdmin()"><option value="premium">Desbloquear Premium</option><option value="apostila">Desconto em apostila</option></select></div>

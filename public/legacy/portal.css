@@ -233,7 +233,11 @@
            ========================================================= */
         .container { max-width: 1180px; margin: 0 auto; padding: 35px 25px; }
         .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .tab-content.active { display: block; animation: portalPageIn .18s ease-out; }
+        @keyframes portalPageIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .admin-tab-content { margin: -18px -10px 0; }
         .admin-legacy-frame {
             display: block; width: 100%; min-height: calc(100vh - 125px); border: 0;
@@ -307,7 +311,7 @@
            4. APOSTILAS & BIBLIOTECA
            ========================================================= */
         .subview-apostila { display: none; }
-        .subview-apostila.active { display: block; }
+        .subview-apostila.active { display: block; animation: portalPageIn .18s ease-out; }
 
         .barra-topo-apostilas {
             display: flex;
@@ -585,7 +589,7 @@
            5. SIMULADOS E HISTÓRICO
            ========================================================= */
         .view-simulado { display: none; }
-        .view-simulado.active { display: block; }
+        .view-simulado.active { display: block; animation: portalPageIn .18s ease-out; }
 
         .top-botoes-simulado {
             display: flex;
@@ -796,6 +800,9 @@
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
         @media (prefers-reduced-motion: reduce) {
+            .tab-content.active,
+            .subview-apostila.active,
+            .view-simulado.active,
             .popover-usuario-header.active,
             .popover-cupons-header.active,
             .popover-marrom.active,
