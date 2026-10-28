@@ -496,12 +496,64 @@ function createAuthAdapter() {
   const adapter = {
     currentUser: null,
     async signInWithPopup() {
+      const width = 520
+      const height = 680
+      const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2)
+      const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2)
+      const popup = window.open(
+        'about:blank',
+        'materia-google-login',
+        `popup=yes,width=${width},height=${height},left=${Math.round(left)},top=${Math.round(top)}`,
+      )
+      if (!popup) throw new Error('O navegador bloqueou a janela de login do Google. Permita popups para este site.')
+      popup.document.title = 'Entrar com Google'
+
       const { data, error } = await client.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.href },
+        options: {
+          redirectTo: `${window.location.origin}/inicio?oauth_popup=google`,
+          skipBrowserRedirect: true,
+        },
       })
-      throwIfError(error)
-      return data
+      if (error || !data?.url) {
+        popup.close()
+        throw error || new Error('O Supabase não retornou a URL de autenticação do Google.')
+      }
+      popup.location.replace(data.url)
+
+      return new Promise((resolve, reject) => {
+        let finished = false
+        let closedWindowCheck
+        let timeout
+        let authListener
+        const finish = (callback) => {
+          if (finished) return
+          finished = true
+          clearInterval(closedWindowCheck)
+          clearTimeout(timeout)
+          authListener?.subscription.unsubscribe()
+          callback()
+        }
+        const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
+          if (!session?.user) return
+          popup.close()
+          finish(() => resolve({ user: mapAuthUser(session.user), session }))
+        })
+        authListener = listener
+        closedWindowCheck = setInterval(async () => {
+          if (!popup.closed) return
+          const { data: sessionData } = await client.auth.getSession()
+          if (sessionData.session?.user) {
+            finish(() => resolve({ user: mapAuthUser(sessionData.session.user), session: sessionData.session }))
+          } else {
+            finish(() => reject(new Error('A janela de login do Google foi fechada antes da autenticação.')))
+          }
+        }, 500)
+        timeout = setTimeout(() => {
+          popup.close()
+          finish(() => reject(new Error('O login com Google excedeu o tempo limite.')))
+        }, 120_000)
+      })
     },
     async signInAnonymously() {
       const { data, error } = await client.auth.signInAnonymously()
@@ -534,6 +586,13 @@ function createAuthAdapter() {
 
 export function installSupabaseFirebaseAdapter() {
   if (!supabase) return false
+  if (window.opener && new URLSearchParams(window.location.search).get('oauth_popup') === 'google') {
+    const closeAuthenticatedPopup = (session) => {
+      if (session?.user) window.setTimeout(() => window.close(), 150)
+    }
+    supabase.auth.getSession().then(({ data }) => closeAuthenticatedPopup(data.session))
+    supabase.auth.onAuthStateChange((_event, session) => closeAuthenticatedPopup(session))
+  }
   const authAdapter = createAuthAdapter()
   const options = { projectId: new URL(import.meta.env.VITE_SUPABASE_URL).hostname.split('.')[0], provider: 'supabase' }
   function auth() { return authAdapter }

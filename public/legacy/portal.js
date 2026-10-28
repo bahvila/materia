@@ -151,8 +151,7 @@
                 fecharModal('modal-auth');
             }).catch(err => {
                 console.error("Erro no login com Google:", err);
-                alert("Não foi possível autenticar com o Google. Tentando modo visitante na nuvem...");
-                loginVisitanteRapido();
+                alert(err.message || "Não foi possível autenticar com o Google. Verifique se o provedor está ativado no Supabase.");
             });
         }
 

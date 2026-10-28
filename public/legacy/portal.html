@@ -405,17 +405,20 @@
 
     <!-- MODAL 6: AUTENTICAÇÃO GOOGLE (Corrigido sem erro de sintaxe) -->
     <div id="modal-auth" class="modal-overlay">
-        <div class="modal-marrom-padrao" style="max-width:420px; text-align:center;">
+        <div class="modal-marrom-padrao modal-auth modal-centered">
             <button class="btn-header-entrar" style="position:absolute; top:16px; right:16px; height:30px;" onclick="fecharModal('modal-auth')">X</button>
-                <img src="/assets/logo-materia.png" alt="Matéria" style="height:32px; margin-bottom:18px;">
-            <h3 style="margin:0 0 10px 0; font-size:22px;">Entrar na Plataforma</h3>
-            <p id="aviso-acao-pendente" style="font-size:14px; opacity:0.9; margin-bottom:24px;">Utilize a sua conta Google para sincronizar simulados, cupons e biblioteca na nuvem.</p>
-            
-            <button class="btn-branco-acao" style="display:flex; align-items:center; justify-content:center; gap:12px; font-size:16px; margin-bottom:10px;" onclick="loginComGoogle()">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="G" style="width:20px;">
-                Continuar com o Google
-            </button>
-            <button class="btn-header-entrar" style="width:100%; justify-content:center; padding:10px;" onclick="loginVisitanteRapido()">Continuar como Visitante (Nuvem)</button>
+            <img class="auth-modal-logo" src="/assets/logo-materia.png" alt="Matéria">
+            <h3 class="auth-modal-title">Entrar na Plataforma</h3>
+            <p id="aviso-acao-pendente" class="auth-modal-description">Entre para sincronizar simulados, cupons e sua biblioteca.</p>
+            <div class="auth-modal-actions">
+                <button class="auth-action-button google-login-button" onclick="loginComGoogle()">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="" aria-hidden="true">
+                    <span>Continuar com o Google</span>
+                </button>
+                <button class="auth-action-button guest-login-button" onclick="loginVisitanteRapido()">
+                    <span>Continuar como Visitante</span>
+                </button>
+            </div>
         </div>
     </div>
 

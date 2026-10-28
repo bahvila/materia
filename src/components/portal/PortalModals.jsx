@@ -136,14 +136,18 @@ export function AuthModal() {
   return (
     <div className="modal-marrom-padrao modal-auth modal-centered">
       <CloseModalButton modalId="modal-auth" />
-      <img src="/assets/logo-materia.png" alt="Matéria" style={{ height: 32, marginBottom: 18 }} />
-      <h3 style={{ margin: '0 0 10px', fontSize: 22 }}>Entrar na Plataforma</h3>
-      <p id="aviso-acao-pendente" style={{ fontSize: 14, opacity: .9, marginBottom: 24 }}>Utilize a sua conta Google para sincronizar simulados, cupons e biblioteca na nuvem.</p>
-      <LegacyButton className="btn-branco-acao google-login-button" onLegacyClick="loginComGoogle">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="" />
-        Continuar com o Google
-      </LegacyButton>
-      <LegacyButton className="btn-header-entrar modal-full-action" style={{ justifyContent: 'center', padding: 10 }} onLegacyClick="loginVisitanteRapido">Continuar como Visitante (Nuvem)</LegacyButton>
+      <img className="auth-modal-logo" src="/assets/logo-materia.png" alt="Matéria" />
+      <h3 className="auth-modal-title">Entrar na Plataforma</h3>
+      <p id="aviso-acao-pendente" className="auth-modal-description">Entre para sincronizar simulados, cupons e sua biblioteca.</p>
+      <div className="auth-modal-actions">
+        <LegacyButton className="auth-action-button google-login-button" onLegacyClick="loginComGoogle">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="" aria-hidden="true" />
+          <span>Continuar com o Google</span>
+        </LegacyButton>
+        <LegacyButton className="auth-action-button guest-login-button" onLegacyClick="loginVisitanteRapido">
+          <span>Continuar como Visitante</span>
+        </LegacyButton>
+      </div>
     </div>
   )
 }
