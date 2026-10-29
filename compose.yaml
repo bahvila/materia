@@ -1,0 +1,10 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:?Defina VITE_SUPABASE_URL no arquivo de ambiente}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY:?Defina VITE_SUPABASE_PUBLISHABLE_KEY no arquivo de ambiente}
+    ports:
+      - "${APP_PORT:-8080}:80"
+    restart: unless-stopped
