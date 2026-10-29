@@ -159,3 +159,9 @@
   .materia-confirm__actions { flex-direction: column-reverse; }
   .materia-confirm__actions button { width: 100%; }
 }
+
+.materia-confirm { max-height: calc(100dvh - 40px); overflow-y: auto; }
+.materia-confirm__content { overflow-wrap: anywhere; }
+@media (max-height: 500px) {
+  .materia-toast-region { top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; }
+}

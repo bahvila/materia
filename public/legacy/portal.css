@@ -14,7 +14,7 @@
         }
 
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { margin: 0; background-color: var(--bg-creme); color: var(--marrom-escuro); overflow-x: hidden; }
+        body { margin: 0; background-color: var(--bg-creme); color: var(--marrom-escuro); }
 
         /* =========================================================
            1. CABEÇALHO CLARO
@@ -937,3 +937,74 @@
             background-color: var(--marrom-header); color: var(--branco);
             border-radius: 16px; padding: 25px; font-size: 15px; line-height: 1.6; min-height: 250px;
         }
+
+/* Layout fluido e adaptação a telas estreitas e de pouca altura. */
+img, canvas { max-width: 100%; }
+button, input, select, textarea { max-width: 100%; }
+.container, .header-left, .header-right, .search-row-home input,
+.grid-3-col > *, .detalhe-topo-grid > *, .grid-premium-layout > *,
+.card-branco-revisao > *, .btn-alternativa-borda { min-width: 0; }
+h1, h2, h3, h4, p, .detalhe-texto-scroll, .btn-alternativa-borda { overflow-wrap: anywhere; }
+header { gap: 18px; }
+.header-right { flex-shrink: 0; }
+#label-nome-usuario { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.popover-cupons-header, .popover-usuario-header { max-width: calc(100vw - 32px); max-height: calc(100dvh - 180px); overflow-y: auto; }
+.popover-marrom { max-width: calc(100vw - 32px); }
+.grid-historico-cards { grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); }
+.modal-overlay { overflow-y: auto; }
+.modal-overlay > * { min-width: 0; max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain; }
+.checkout-summary, .botoes-alerta, .top-botoes-simulado, .barra-topo-apostilas { flex-wrap: wrap; }
+.lista-numeros-questoes { min-width: 0; justify-content: flex-start; }
+
+@media (max-width: 1150px) {
+    header { flex-wrap: wrap; padding: 12px 24px; }
+    .header-left { flex: 1 1 100%; gap: 20px; }
+    .header-left nav { flex: 1; flex-wrap: wrap; }
+    .header-right { margin-left: auto; }
+}
+
+@media (max-width: 700px) {
+    header { position: relative; padding: 12px 16px; gap: 14px; }
+    .header-left { align-items: flex-start; gap: 12px; }
+    .logo-header { flex: 0 0 36px; width: 36px; height: 36px; }
+    .header-left nav { gap: 4px; }
+    .nav-btn { padding: 10px; font-size: 13px; min-height: 40px; }
+    .header-right { flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: 100%; }
+    .btn-header-entrar, .btn-header-usuario { padding: 0 12px; }
+    #label-nome-usuario { max-width: 100px; }
+    .container { padding: 24px 16px; }
+    .hero-home { padding: 36px 0; }
+    .hero-home h1 { font-size: clamp(30px, 7vw, 44px); }
+    .hero-home p { font-size: 16px; margin-bottom: 24px; }
+    .search-row-home { flex-direction: column; }
+    .search-row-home button { min-height: 48px; }
+    .detalhe-caixa-branca-texto { padding: 22px; }
+    .barra-botoes-detalhe-novo, .grupo-esquerda-ler-cupom { gap: 12px; width: 100%; }
+    .barra-botoes-detalhe-novo > button, .grupo-esquerda-ler-cupom > button { width: 100%; }
+    .barra-controlo-pdf { padding: 14px; }
+    .barra-controlo-pdf > div { flex-wrap: wrap; gap: 10px; }
+    .barra-topo-prova { flex-wrap: wrap; gap: 12px; padding: 14px; border-radius: 16px; margin-bottom: 22px; }
+    .bloco-timer-desistir { min-width: 0; margin-left: auto; }
+    #barra-paginacao-prova { order: 3; flex-basis: 100%; padding: 4px 0; }
+    .area-questao-prova { padding: 0; display: flex; flex-direction: column; gap: 14px; }
+    .btn-nav-lateral-fixo { position: static; transform: none; width: 100%; min-height: 44px; }
+    .btn-nav-lateral-fixo:hover { transform: none; }
+    .btn-nav-lateral-fixo.prev { order: 2; }
+    .btn-nav-lateral-fixo.next { order: 1; }
+    .btn-nav-lateral-fixo br, .btn-nav-lateral-fixo span { display: none; }
+    .item-alternativa-linha { gap: 8px; }
+    .btn-alternativa-borda { padding: 12px; }
+    .painel-resultado-full, .card-branco-revisao { padding: 20px; gap: 20px; }
+    .modal-overlay { padding: 12px; }
+    .modal-overlay > * { max-height: calc(100dvh - 24px); }
+    .modal-marrom-padrao, .modal-marrom-padrao.modal-profile, .modal-alerta-branca { padding: 60px 20px 24px; }
+    .card-branco-modo { padding: 20px; }
+    .btn-dourado-assinar { padding: 14px 20px; font-size: 18px; }
+    .admin-tab-content { margin: 0; }
+}
+
+@media (max-height: 500px) {
+    header { position: relative; }
+    .modal-overlay { align-items: flex-start; }
+    .popover-cupons-header, .popover-usuario-header { max-height: 60dvh; }
+}
