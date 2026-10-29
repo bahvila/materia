@@ -4,6 +4,30 @@
         const auth = firebase.auth();
         const adminSections = ['apostilas', 'simulados', 'cupons'];
 
+        function validarCamposObrigatorios(campos) {
+            const vazios = campos.filter(([id]) => {
+                const campo = document.getElementById(id);
+                const vazio = campo.type === 'file' ? !campo.files.length : !campo.value.trim();
+                campo.setAttribute('aria-required', 'true');
+                if (vazio) campo.setAttribute('aria-invalid', 'true');
+                else campo.removeAttribute('aria-invalid');
+                if (!campo.dataset.validacaoObrigatoria) {
+                    const limparErro = () => {
+                        const preenchido = campo.type === 'file' ? campo.files.length > 0 : Boolean(campo.value.trim());
+                        if (preenchido) campo.removeAttribute('aria-invalid');
+                    };
+                    campo.addEventListener('input', limparErro);
+                    campo.addEventListener('change', limparErro);
+                    campo.dataset.validacaoObrigatoria = 'true';
+                }
+                return vazio;
+            });
+            if (!vazios.length) return true;
+            mostrarToast('warning', `Preencha os campos obrigatórios: ${vazios.map(([, nome]) => nome).join(', ')}.`, { title: 'Campos não preenchidos' });
+            document.getElementById(vazios[0][0]).focus();
+            return false;
+        }
+
         function definirStatus(id, mensagem = '', tipo = 'success') {
             const element = document.getElementById(id);
             if (!element) return;
@@ -45,6 +69,7 @@
         }
 
         function fazerLoginAdmin() {
+            if (!validarCamposObrigatorios([['adm-login-email', 'E-mail'], ['adm-login-senha', 'Senha']])) return;
             const email = document.getElementById('adm-login-email').value.trim();
             const senha = document.getElementById('adm-login-senha').value;
             if (!email || !senha) {
@@ -101,6 +126,14 @@
         });
 
         async function salvarApostila() {
+            if (!validarCamposObrigatorios([
+                ['adm-ap-titulo', 'Título da apostila'],
+                ['adm-ap-sub', 'Subtítulo'],
+                ['adm-ap-preco', 'Preço'],
+                ['adm-ap-capa', 'URL da capa'],
+                ['adm-ap-pdf', 'URL do PDF'],
+                ['adm-ap-desc', 'Descrição'],
+            ])) return;
             const nova = {
                 titulo: document.getElementById('adm-ap-titulo').value.trim(),
                 subtitulo: document.getElementById('adm-ap-sub').value.trim(),
@@ -167,6 +200,13 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
         });
 
         async function salvarConfigSimulado() {
+            if (!validarCamposObrigatorios([
+                ['adm-sim-titulo', 'Título do simulado'],
+                ['adm-sim-desc', 'Descrição'],
+                ['adm-sim-capa', 'URL da capa'],
+                ['adm-sim-tempo', 'Tempo (min)'],
+                ['adm-sim-status', 'Status'],
+            ])) return;
             const id = document.getElementById('adm-sim-id').value;
             const titulo = document.getElementById('adm-sim-titulo').value.trim();
             const slug = document.getElementById('adm-sim-slug').value.trim() || gerarSlug(titulo);
@@ -352,6 +392,7 @@ function alternarCamposTipoCupomAdmin() {
         }
 
         async function salvarCupomAdmin() {
+            if (!validarCamposObrigatorios([['adm-cupom-codigo', 'Código do cupom']])) return;
             const codigoRaw = document.getElementById('adm-cupom-codigo').value.trim().toUpperCase();
             const codigo = codigoRaw.replace(/[^A-Z0-9]/g, '').slice(0, 10);
             const tipo = document.getElementById('adm-cupom-tipo').value;
@@ -470,6 +511,7 @@ function alternarCamposTipoCupomAdmin() {
         navegarAdmin(secaoAdminAtual(), false);
 
         async function importarPlanilhaCSV() {
+            if (!validarCamposObrigatorios([['adm-csv-simid', 'Simulado'], ['adm-sim-csv', 'Arquivo CSV']])) return;
             const input = document.getElementById('adm-sim-csv');
             const simId = document.getElementById('adm-csv-simid').value;
             const mode = document.getElementById('adm-csv-mode').value;

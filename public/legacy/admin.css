@@ -24,6 +24,7 @@ label { display:block; margin:12px 0 5px; color:#57433a; font-size:12px; font-we
 input,textarea,select { width:100%; padding:10px 12px; border:1.5px solid #d6ccc7; border-radius:9px; background:#fff; color:#30231e; font-size:13px; outline:0; transition:border-color .15s,box-shadow .15s; }
 input:focus,textarea:focus,select:focus { border-color:var(--marrom-header); box-shadow:0 0 0 3px rgba(70,53,46,.09); }
 input[readonly] { background:#f4f0ee; color:#75645c; }
+input[aria-invalid="true"],textarea[aria-invalid="true"],select[aria-invalid="true"] { border-color:#c53030; box-shadow:0 0 0 3px rgba(197,48,48,.12); }
 .admin-form-grid { display:grid; gap:12px; align-items:end; } .admin-form-grid.two { grid-template-columns:repeat(2,1fr); } .admin-form-grid.three { grid-template-columns:2fr .7fr .7fr; } .admin-form-grid.four { grid-template-columns:1.3fr 1fr .8fr 1.5fr; }
 .status-row { grid-template-columns:220px 220px; justify-content:end; margin-top:13px; }
 .slug-field { display:flex; align-items:center; overflow:hidden; border:1.5px solid #d6ccc7; border-radius:9px; background:#f4f0ee; }
