@@ -49,3 +49,28 @@ input[aria-invalid="true"],textarea[aria-invalid="true"],select[aria-invalid="tr
 @media(max-width:900px) { body{padding:14px}.admin-topbar,.admin-page-heading{align-items:flex-start;flex-direction:column}.admin-auth-box{flex-wrap:wrap}.admin-two-columns{grid-template-columns:1fr}.admin-list-card{position:static}.admin-form-grid.three,.admin-form-grid.four{grid-template-columns:1fr 1fr}.status-row{grid-template-columns:1fr 1fr} }
 @media(max-width:580px) { .admin-form-grid.two,.admin-form-grid.three,.admin-form-grid.four,.status-row{grid-template-columns:1fr}.admin-navigation{width:100%}.admin-nav-button{flex:1;padding:9px 8px}.admin-auth-box input{width:100%} }
 @media(prefers-reduced-motion:reduce) { .admin-page{animation:none} }
+
+/* Permite que textos, arquivos e formulários encolham dentro das colunas. */
+.admin-topbar > *, .admin-two-columns > *, .admin-form-grid > *,
+.admin-auth-box, .slug-field, .slug-field input { min-width: 0; }
+.admin-topbar, .card-heading-row, .admin-authenticated-box { flex-wrap: wrap; }
+.admin-navigation { max-width: 100%; flex-wrap: wrap; }
+.admin-record-list { overflow-wrap: anywhere; }
+.admin-record-list > div { flex-wrap: wrap; gap: 12px; }
+.admin-record-list > div > div { min-width: 0; max-width: 100%; }
+.admin-record-list > div > div:last-child { flex-wrap: wrap; }
+.admin-authenticated-box > span { min-width: 0; overflow-wrap: anywhere; }
+.card-admin, .admin-access-denied { overflow-wrap: anywhere; }
+input[type="file"] { min-width: 0; }
+textarea { resize: vertical; }
+@media (max-width: 580px) {
+    .card-admin { padding: 18px; }
+    .admin-topbar { padding: 18px; }
+    .admin-auth-box, .admin-authenticated-box { width: 100%; }
+    .admin-auth-box input { flex: 1 1 100%; }
+    .admin-nav-button { flex: 1 1 auto; min-height: 44px; }
+    .card-heading-row { align-items: flex-start; }
+    .admin-action-compact { width: 100%; min-width: 0; }
+    .admin-access-denied { margin: 24px auto; padding: 24px; }
+    input, textarea, select { font-size: 16px; }
+}
