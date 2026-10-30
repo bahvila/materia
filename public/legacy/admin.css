@@ -74,3 +74,9 @@ textarea { resize: vertical; }
     .admin-access-denied { margin: 24px auto; padding: 24px; }
     input, textarea, select { font-size: 16px; }
 }
+.admin-tag-pill { display: inline-block; padding: 8px 12px; margin: 6px 6px 0 0; border: 1px solid #ded5d1; border-radius: 20px; font-size: 13px; }
+.admin-tag-options { display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto; margin: 16px 0; }
+.admin-tag-options label { display: flex; align-items: center; gap: 10px; margin: 0; cursor: pointer; overflow-wrap: anywhere; }
+.admin-tag-options input[type="checkbox"] { width: 18px; height: 18px; margin: 0; flex-shrink: 0; }
+.admin-navigation { max-width: 100%; flex-wrap: wrap; }
+#adm-ap-tags, #adm-sim-tags { min-height: 100px; }

@@ -2,7 +2,10 @@
         firebase.initializeApp({ provider: "supabase" });
         const db = firebase.firestore();
         const auth = firebase.auth();
-        const adminSections = ['apostilas', 'simulados', 'cupons'];
+        const adminSections = ['apostilas', 'simulados', 'cupons', 'tags'];
+        let tagsAdmin = [];
+        let conteudosTagsAdmin = [];
+        let carregamentoTagsAdmin = 0;
 
         function validarCamposObrigatorios(campos) {
             const vazios = campos.filter(([id]) => {
@@ -46,7 +49,7 @@
 
         function secaoAdminAtual() {
             try {
-                const parentMatch = window.parent.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons)/);
+                const parentMatch = window.parent.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons|tags)/);
                 if (parentMatch) return parentMatch[1];
             } catch (_) { /* iframe isolado: usa a query local */ }
             const querySection = new URLSearchParams(window.location.search).get('section');
@@ -58,6 +61,9 @@
             document.querySelectorAll('.admin-page').forEach(page => page.classList.remove('active'));
             document.querySelectorAll('.admin-nav-button').forEach(button => button.classList.toggle('active', button.dataset.adminSection === target));
             document.getElementById(`admin-page-${target}`)?.classList.add('active');
+            if (target === 'tags') carregarTagsAdmin();
+            if (target === 'apostilas') carregarTagsFormularioAdmin('apostila');
+            if (target === 'simulados') carregarTagsFormularioAdmin('simulado');
             if (updateAddress) {
                 try {
                     window.parent.history.pushState({ separador: 'administrador', adminSection: target }, '', `/administrador/${target}`);
@@ -119,6 +125,9 @@
                 document.getElementById('label-email-admin').innerText = user.email;
                 carregarListasAdmin();
                 carregarCuponsNoAdmin();
+                carregarTagsAdmin();
+                carregarTagsFormularioAdmin('apostila');
+                carregarTagsFormularioAdmin('simulado');
             } else {
                 boxLogin.style.display = 'flex';
                 boxLogado.style.display = 'none';
@@ -127,6 +136,7 @@
 
         async function salvarApostila() {
             if (!validarCamposObrigatorios([
+                ['adm-ap-tags', 'Tag da apostila'],
                 ['adm-ap-titulo', 'Título da apostila'],
                 ['adm-ap-sub', 'Subtítulo'],
                 ['adm-ap-preco', 'Preço'],
@@ -135,6 +145,7 @@
                 ['adm-ap-desc', 'Descrição'],
             ])) return;
             const nova = {
+                tags: [...document.getElementById('adm-ap-tags').selectedOptions].map(option => option.value),
                 titulo: document.getElementById('adm-ap-titulo').value.trim(),
                 subtitulo: document.getElementById('adm-ap-sub').value.trim(),
                 preco: document.getElementById('adm-ap-preco').value.trim(),
@@ -180,6 +191,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
         }
 
         function novoSimulado() {
+            [...document.getElementById('adm-sim-tags').options].forEach(option => { option.selected = false; });
             document.getElementById('adm-sim-id').value = '';
             document.getElementById('adm-sim-titulo').value = '';
             document.getElementById('adm-sim-slug').value = '';
@@ -201,6 +213,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
 
         async function salvarConfigSimulado() {
             if (!validarCamposObrigatorios([
+                ['adm-sim-tags', 'Tag do simulado'],
                 ['adm-sim-titulo', 'Título do simulado'],
                 ['adm-sim-desc', 'Descrição'],
                 ['adm-sim-capa', 'URL da capa'],
@@ -218,6 +231,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
                 if (valor) filtros[campo] = valor;
             });
             const row = {
+                tags: [...document.getElementById('adm-sim-tags').selectedOptions].map(option => option.value),
                 titulo,
                 slug,
                 descricao: document.getElementById('adm-sim-desc').value.trim(),
@@ -243,6 +257,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
         async function editarSimuladoNaCaixa(id) {
             const { data, error } = await window.supabase.from('simulados').select('*').eq('id', id).single();
             if (error) return mostrarToast('error', error.message, { title: 'Erro ao carregar simulado' });
+            await carregarTagsFormularioAdmin('simulado', data.tags || []);
             document.getElementById('adm-sim-id').value = data.id;
             document.getElementById('adm-sim-titulo').value = data.titulo;
             document.getElementById('adm-sim-slug').value = data.slug;
@@ -583,3 +598,123 @@ function alternarCamposTipoCupomAdmin() {
                 },
             });
         }
+async function carregarTagsAdmin() {
+    const tipo = document.getElementById('adm-tag-tipo').value;
+    const token = ++carregamentoTagsAdmin;
+    const conteudoSelect = document.getElementById('adm-tag-conteudo');
+    const selecionado = conteudoSelect.value;
+    document.getElementById('adm-tags-vincular').disabled = true;
+    definirStatus('status-tags', 'Carregando tags...');
+    try {
+        const [tags, conteudos] = await Promise.all([
+            window.supabase.from('content_tags').select('id,nome,tipo').eq('tipo', tipo).order('nome'),
+            window.supabase.from(tipo === 'apostila' ? 'apostilas' : 'simulados').select('id,titulo,tags').order('titulo'),
+        ]);
+        if (token !== carregamentoTagsAdmin) return;
+        if (tags.error || conteudos.error) throw tags.error || conteudos.error;
+        tagsAdmin = tags.data || [];
+        conteudosTagsAdmin = conteudos.data || [];
+        const lista = document.getElementById('lista-admin-tags');
+        lista.replaceChildren();
+        if (!tagsAdmin.length) lista.textContent = 'Nenhuma tag cadastrada para este tipo.';
+        tagsAdmin.forEach(tag => {
+            const item = document.createElement('span');
+            item.className = 'admin-tag-pill';
+            item.textContent = tag.nome;
+            lista.appendChild(item);
+        });
+        conteudoSelect.replaceChildren(new Option('Selecione...', ''));
+        conteudosTagsAdmin.forEach(item => conteudoSelect.add(new Option(item.titulo, item.id)));
+        conteudoSelect.value = conteudosTagsAdmin.some(item => item.id === selecionado) ? selecionado : '';
+        selecionarConteudoTagsAdmin();
+        definirStatus('status-tags');
+    } catch (error) {
+        if (token !== carregamentoTagsAdmin) return;
+        tagsAdmin = [];
+        conteudosTagsAdmin = [];
+        conteudoSelect.replaceChildren(new Option('Selecione...', ''));
+        document.getElementById('adm-tags-opcoes').replaceChildren();
+        definirStatus('status-tags', error.message || 'Erro ao carregar tags.', 'error');
+    }
+}
+
+function selecionarConteudoTagsAdmin() {
+    const item = conteudosTagsAdmin.find(row => row.id === document.getElementById('adm-tag-conteudo').value);
+    const opcoes = document.getElementById('adm-tags-opcoes');
+    opcoes.replaceChildren();
+    tagsAdmin.forEach(tag => {
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = tag.nome;
+        input.checked = Boolean(item?.tags?.includes(tag.nome));
+        input.disabled = !item;
+        label.append(input, document.createTextNode(tag.nome));
+        opcoes.appendChild(label);
+    });
+    document.getElementById('adm-tags-vincular').disabled = !item;
+}
+
+async function criarTagAdmin() {
+    const nome = document.getElementById('adm-tag-nome').value.trim();
+    if (!nome || nome.length > 80) return definirStatus('status-tags', 'Informe um nome com at\u00e9 80 caracteres.', 'error');
+    const button = document.getElementById('adm-tag-criar');
+    button.disabled = true;
+    try {
+        const { error } = await window.supabase.from('content_tags').insert({ nome, tipo: document.getElementById('adm-tag-tipo').value });
+        if (error) throw error;
+        document.getElementById('adm-tag-nome').value = '';
+        await carregarTagsAdmin();
+        definirStatus('status-tags', 'Tag criada com sucesso.');
+    } catch (error) {
+        definirStatus('status-tags', error.code === '23505' ? 'J\u00e1 existe uma tag com este nome para este tipo.' : error.message, 'error');
+    } finally { button.disabled = false; }
+}
+
+async function salvarTagsConteudoAdmin() {
+    const id = document.getElementById('adm-tag-conteudo').value;
+    const tipo = document.getElementById('adm-tag-tipo').value;
+    const item = conteudosTagsAdmin.find(row => row.id === id);
+    if (!item) return;
+    const tags = [...document.querySelectorAll('#adm-tags-opcoes input:checked')].map(input => input.value);
+    // Keep any existing legacy tags that are not represented in the registry.
+    const preservadas = (item.tags || []).filter(nome => !tagsAdmin.some(tag => tag.nome === nome));
+    const button = document.getElementById('adm-tags-vincular');
+    button.disabled = true;
+    try {
+        const { error } = await window.supabase.from(tipo === 'apostila' ? 'apostilas' : 'simulados')
+            .update({ tags: [...new Set([...preservadas, ...tags])] }).eq('id', id).select('id').single();
+        if (error) throw error;
+        await carregarTagsAdmin();
+        definirStatus('status-tags', 'Tags do conte\u00fado salvas.');
+        sincronizarPortal(tipo === 'apostila' ? 'apostilas' : 'simulados');
+    } catch (error) { definirStatus('status-tags', error.message, 'error'); }
+    finally { button.disabled = !document.getElementById('adm-tag-conteudo').value; }
+}
+async function carregarTagsFormularioAdmin(tipo, selecionadas) {
+    const select = document.getElementById(tipo === 'apostila' ? 'adm-ap-tags' : 'adm-sim-tags');
+    if (!select) return;
+    const token = String(Number(select.dataset.request || 0) + 1);
+    select.dataset.request = token;
+    const atuais = selecionadas || [...select.selectedOptions].map(option => option.value);
+    select.disabled = true;
+    try {
+        const { data, error } = await window.supabase.from('content_tags').select('nome').eq('tipo', tipo).order('nome');
+        if (select.dataset.request !== token) return;
+        if (error) throw error;
+        const nomes = [...new Set([...(data || []).map(tag => tag.nome), ...atuais])];
+        select.replaceChildren();
+        nomes.forEach(nome => select.add(new Option(nome, nome, false, atuais.includes(nome))));
+        if (!nomes.length) {
+            const option = new Option('Cadastre uma tag na aba Tags', '');
+            option.disabled = true;
+            select.add(option);
+        }
+        select.disabled = false;
+        select.removeAttribute('aria-invalid');
+    } catch (error) {
+        if (select.dataset.request !== token) return;
+        select.replaceChildren(new Option('Erro ao carregar tags. Reabra esta aba.', ''));
+        definirStatus(tipo === 'apostila' ? 'status-ap' : 'status-sim', error.message, 'error');
+    }
+}

@@ -42,7 +42,7 @@ export function navigatePortal(section, { container = document, historyMode = 'p
 
   if (target === 'administrador') {
     const frame = container.querySelector('#admin-legacy-frame')
-    const adminSection = window.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons)/)?.[1] || 'apostilas'
+    const adminSection = window.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons|tags)/)?.[1] || 'apostilas'
     const frameSource = `/admin?section=${adminSection}`
     if (frame && !frame.src) frame.src = frameSource
     else if (frame?.contentWindow?.navegarAdmin) frame.contentWindow.navegarAdmin(adminSection, false)
@@ -60,7 +60,7 @@ export function navigatePortal(section, { container = document, historyMode = 'p
 
   document.title = portalTitles[target]
   const destination = target === 'administrador'
-    ? `/administrador/${window.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons)/)?.[1] || 'apostilas'}`
+    ? `/administrador/${window.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons|tags)/)?.[1] || 'apostilas'}`
     : portalRoutes[target]
   if (requestedTarget !== target && window.location.pathname !== destination) {
     window.history.replaceState({ separador: target }, '', destination)

@@ -16,6 +16,7 @@
     <button class="admin-nav-button active" data-admin-section="apostilas" onclick="navegarAdmin('apostilas')">Apostilas</button>
     <button class="admin-nav-button" data-admin-section="simulados" onclick="navegarAdmin('simulados')">Simulados</button>
     <button class="admin-nav-button" data-admin-section="cupons" onclick="navegarAdmin('cupons')">Cupons</button>
+    <button class="admin-nav-button" data-admin-section="tags" onclick="navegarAdmin('tags')">Tags</button>
   </nav>
 
   <main>
@@ -24,6 +25,8 @@
       <div class="admin-two-columns">
         <article class="card-admin">
           <h3>Nova apostila</h3>
+          <label for="adm-ap-tags">Tags (obrigatório)</label><select id="adm-ap-tags" multiple required aria-describedby="adm-ap-tags-ajuda"></select>
+          <p id="adm-ap-tags-ajuda" class="card-description">Selecione uma ou mais tags. Cadastre novas opções na aba Tags.</p>
           <label>Título</label><input type="text" id="adm-ap-titulo" placeholder="Ex.: Direito Constitucional">
           <label>Subtítulo</label><input type="text" id="adm-ap-sub" placeholder="Ex.: Teoria e questões comentadas">
           <label>Preço (R$)</label><input type="text" id="adm-ap-preco" placeholder="Ex: 14,99">
@@ -43,6 +46,8 @@
       <div class="admin-page-heading"><div><p>Conteúdo</p><h2>Simulados</h2></div><button class="admin-secondary-button" onclick="novoSimulado()">+ Novo simulado</button></div>
       <article class="card-admin">
         <h3>Dados do simulado</h3><input type="hidden" id="adm-sim-id">
+        <label for="adm-sim-tags">Tags (obrigatório)</label><select id="adm-sim-tags" multiple required aria-describedby="adm-sim-tags-ajuda"></select>
+        <p id="adm-sim-tags-ajuda" class="card-description">Selecione uma ou mais tags. Cadastre novas opções na aba Tags.</p>
         <div class="admin-form-grid two"><div><label>Título</label><input type="text" id="adm-sim-titulo" placeholder="Ex.: Enfermagem"></div><div><label>Descrição</label><input type="text" id="adm-sim-desc" placeholder="Ex.: Anatomia sistêmica"></div></div>
         <label>Endereço do simulado</label><div class="slug-field"><span>/simulados/</span><input type="text" id="adm-sim-slug" placeholder="gerado-pelo-titulo" readonly></div>
         <div class="admin-form-grid three"><div><label>URL da capa</label><input type="text" id="adm-sim-capa" placeholder="https://..."></div><div><label>Questões</label><input type="number" id="adm-sim-qtd" value="0" readonly></div><div><label>Tempo (min)</label><input type="number" id="adm-sim-tempo" value="60"></div></div>
@@ -71,6 +76,28 @@
           <div id="box-adm-cupom-cron2"><label>Dias de Premium</label><input type="number" id="adm-cupom-cron2" min="1" placeholder="Permanente"></div><div id="box-adm-cupom-porcentagem" style="display:none"><label>Desconto (%)</label><input type="number" id="adm-cupom-desconto" min="1" max="100" value="100"></div>
         </div><button class="btn-marrom" onclick="salvarCupomAdmin()">Criar cupom</button><div id="status-cupom-admin" class="status-msg"></div></article>
         <article class="card-admin admin-list-card"><div class="card-heading-row"><div><p>Códigos</p><h3>Cupons cadastrados</h3></div><button class="admin-icon-button" onclick="carregarCuponsNoAdmin()">Atualizar</button></div><div id="lista-admin-cupons" class="admin-record-list">Carregando...</div></article>
+      </div>
+    </section>
+    <section id="admin-page-tags" class="admin-page">
+      <div class="admin-page-heading"><div><p>Organização</p><h2>Tags</h2></div></div>
+      <div class="admin-two-columns">
+        <article class="card-admin">
+          <h3>Criar tag</h3>
+          <form onsubmit="event.preventDefault(); criarTagAdmin()">
+            <label for="adm-tag-tipo">Tipo de conteúdo</label><select id="adm-tag-tipo" onchange="carregarTagsAdmin()"><option value="apostila">Apostila</option><option value="simulado">Simulado</option></select>
+            <label for="adm-tag-nome">Nome da tag</label><input id="adm-tag-nome" maxlength="80" required placeholder="Ex.: Direito Constitucional">
+            <button class="btn-marrom" id="adm-tag-criar" type="submit">Criar tag</button>
+          </form>
+          <div id="status-tags" class="status-msg" role="status"></div>
+          <h3>Tags cadastradas</h3><div id="lista-admin-tags" class="admin-record-list"></div>
+        </article>
+        <article class="card-admin">
+          <h3>Vincular tags ao conteúdo</h3>
+          <label for="adm-tag-conteudo">Conteúdo</label><select id="adm-tag-conteudo" onchange="selecionarConteudoTagsAdmin()"><option value="">Selecione...</option></select>
+          <p class="card-description">Marque as tags que deseja exibir nos filtros do catálogo.</p>
+          <div id="adm-tags-opcoes" class="admin-tag-options"></div>
+          <button id="adm-tags-vincular" class="btn-marrom" onclick="salvarTagsConteudoAdmin()" disabled>Salvar tags do conteúdo</button>
+        </article>
       </div>
     </section>
   </main>

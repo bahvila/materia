@@ -95,6 +95,7 @@ function simuladoFromRow(row) {
     uuid: row.id,
     colecaoQuestoes: row.slug || row.id,
     tituloVisivel: row.titulo,
+    tags: row.tags || [],
     descricaoVisivel: row.descricao || '',
     nome: row.descricao ? `${row.titulo}: ${row.descricao}` : row.titulo,
     capaUrl: storagePublicUrl('apostila-capas', row.imagem_path),
@@ -112,6 +113,7 @@ function simuladoToRow(value, documentId) {
   return {
     slug,
     titulo,
+    tags: value.tags || [],
     descricao: value.descricaoVisivel || value.descricao || '',
     imagem_path: value.capaUrl || value.imagem_path || '',
     duracao_minutos: value.tempo_banca || value.duracao_minutos || 60,
