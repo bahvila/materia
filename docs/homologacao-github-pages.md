@@ -53,9 +53,11 @@ conflitem com esses nomes; preserve registros de e-mail como MX e TXT.
 Depois que o DNS for validado e o certificado estiver disponível, habilite
 **Enforce HTTPS** em Pages. A propagação do DNS pode levar até 24 horas.
 
-O domínio personalizado é necessário para este build, pois os assets usam
-caminhos a partir da raiz (`/assets`, `/legacy`). Não use a URL com subpasta
-`usuario.github.io/repositorio` como endereço de validação deste deploy.
+O domínio personalizado é opcional. Enquanto configura o DNS, deixe o campo
+Custom domain vazio e use `https://bahvila.github.io/materia/`. O workflow
+detecta a base do GitHub Pages e adapta os arquivos e rotas para essa subpasta.
+Quando ativar `materiaedu.com`, execute o workflow novamente para gerar o build
+com a nova base.
 
 ## 3. Ajustar o login
 
@@ -64,6 +66,11 @@ No Supabase, em **Authentication → URL Configuration**, configure:
 - Site URL: `https://materiaedu.com`
 - Redirect URLs: `https://materiaedu.com/` e `https://www.materiaedu.com/`
 - Preserve também as URLs locais necessárias ao desenvolvimento.
+
+Enquanto usar o endereço padrão do GitHub, configure Site URL como
+`https://bahvila.github.io/materia/` e inclua a URL de retorno
+`https://bahvila.github.io/materia/?oauth_popup=google` em Redirect URLs.
+Para o domínio próprio, inclua também `https://materiaedu.com/?oauth_popup=google`.
 
 Se criar outro projeto Supabase, configure novamente os provedores de login e
 seus callbacks, além de cadastrar um administrador no banco de homologação.

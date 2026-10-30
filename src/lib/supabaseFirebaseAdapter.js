@@ -1,3 +1,4 @@
+import { sitePath } from './sitePaths'
 import { requireSupabase, supabase } from './supabaseClient'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -515,7 +516,7 @@ function createAuthAdapter() {
       const { data, error } = await client.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/inicio?oauth_popup=google`,
+          redirectTo: `${window.location.origin}${sitePath('?oauth_popup=google')}`,
           skipBrowserRedirect: true,
         },
       })

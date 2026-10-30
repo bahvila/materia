@@ -1,3 +1,5 @@
+import { localPath, siteBase } from '../lib/sitePaths'
+
 // Stable route identifiers keep links valid across reloads and builds.
 const hashes = {
   "/inicio": "a0c4ea6670ac009ae31b57487fc1c6f021b69383b74b77a5b93670398b78b559",
@@ -17,8 +19,8 @@ const hashes = {
 
 export function routeUrl(path) {
   const reader = path.match(/^\/apostila#leitor\/([a-f0-9]{64})$/)
-  if (reader) return '/#' + reader[1]
-  return '/#' + (hashes[path] || hashes['/inicio'])
+  if (reader) return siteBase + '#' + reader[1]
+  return siteBase + '#' + (hashes[path] || hashes['/inicio'])
 }
 
 export function currentRoute() {
@@ -26,7 +28,8 @@ export function currentRoute() {
   const known = Object.keys(hashes).find(path => hashes[path] === hash)
   if (known) return known
   if (/^[a-f0-9]{64}$/.test(hash)) return '/apostila#leitor/' + hash
-  return window.location.pathname + (window.location.pathname === '/admin' ? window.location.search : '') + (window.location.hash.startsWith('#leitor/') ? window.location.hash : '')
+  const path = localPath(window.location.pathname)
+  return path + (path === '/admin' ? window.location.search : '') + (window.location.hash.startsWith('#leitor/') ? window.location.hash : '')
 }
 
 window.portalRouteUrl = routeUrl

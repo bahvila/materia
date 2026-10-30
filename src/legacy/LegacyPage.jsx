@@ -5,6 +5,7 @@ import { PortalHeader } from '../components/portal/PortalHeader'
 import { portalModalComponents } from '../components/portal/portalComponentRegistry'
 import { navigatePortal, sectionFromPath } from './portalNavigation'
 import { currentRoute, routeUrl } from './hashedRoutes'
+import { sitePath } from '../lib/sitePaths'
 import { installSupabaseFirebaseAdapter } from '../lib/supabaseFirebaseAdapter'
 import { ToastProvider } from '../components/feedback/ToastProvider'
 import { installToastBridge } from '../lib/toast'
@@ -41,14 +42,14 @@ export function LegacyPage({ page }) {
 
     async function mountLegacyPage() {
       try {
-        const response = await fetch(`/legacy/${page}.html`)
+        const response = await fetch(sitePath(`legacy/${page}.html`))
         if (!response.ok) throw new Error(`Falha ao carregar ${page}.html`)
-        const html = await response.text()
+        const html = (await response.text()).replaceAll('"/assets/', `"${sitePath('assets/')}`)
         if (!active) return
 
         stylesheet = document.createElement('link')
         stylesheet.rel = 'stylesheet'
-        stylesheet.href = `/legacy/${page}.css`
+        stylesheet.href = sitePath(`legacy/${page}.css`)
         stylesheet.dataset.legacyPage = page
         document.head.appendChild(stylesheet)
         flushSync(() => setMarkup(html))
@@ -74,7 +75,7 @@ export function LegacyPage({ page }) {
             window.history.replaceState(window.history.state, '', routeUrl(currentRoute()))
           }
           script = document.createElement('script')
-          script.src = `/legacy/${page}.js`
+          script.src = sitePath(`legacy/${page}.js`)
           script.dataset.legacyPage = page
           script.onload = () => {
             if (page === 'portal') {
