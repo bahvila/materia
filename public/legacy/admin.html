@@ -49,7 +49,7 @@
         <label for="adm-sim-tags">Tags (obrigatório)</label><select id="adm-sim-tags" multiple required aria-describedby="adm-sim-tags-ajuda"></select>
         <p id="adm-sim-tags-ajuda" class="card-description">Selecione uma ou mais tags. Cadastre novas opções na aba Tags.</p>
         <div class="admin-form-grid two"><div><label>Título</label><input type="text" id="adm-sim-titulo" placeholder="Ex.: Enfermagem"></div><div><label>Descrição</label><input type="text" id="adm-sim-desc" placeholder="Ex.: Anatomia sistêmica"></div></div>
-        <label>Endereço do simulado</label><div class="slug-field"><span>/simulados/</span><input type="text" id="adm-sim-slug" placeholder="gerado-pelo-titulo" readonly></div>
+        <input type="hidden" id="adm-sim-slug">
         <div class="admin-form-grid three"><div><label>URL da capa</label><input type="text" id="adm-sim-capa" placeholder="https://..."></div><div><label>Questões</label><input type="number" id="adm-sim-qtd" value="0" readonly></div><div><label>Tempo (min)</label><input type="number" id="adm-sim-tempo" value="60"></div></div>
         <details class="admin-filters"><summary>Filtros opcionais das questões</summary><div class="admin-form-grid two">
           <div><label>Dificuldade</label><select id="filtro-col-dificuldade"><option value="">Todas</option></select></div><div><label>Assunto</label><select id="filtro-col-assunto"><option value="">Todos</option></select></div>

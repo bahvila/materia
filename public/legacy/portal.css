@@ -715,11 +715,13 @@
 
         .lista-numeros-questoes { 
             display: flex; gap: 6px; flex-wrap: nowrap; justify-content: center;
-            flex: 1; padding: 0 15px; overflow-x: auto;
+            flex: 1 1 0; min-width: 0; padding: 0 15px; overflow-x: auto;
+            overscroll-behavior-x: contain;
         }
         .lista-numeros-questoes::-webkit-scrollbar { display: none; } 
 
         .quadrado-num {
+            border: 0; padding: 0;
             background: rgba(255,255,255,0.2);
             color: var(--branco);
             width: 30px; height: 30px; border-radius: 6px;
@@ -727,6 +729,7 @@
             font-weight: 700; font-size: 14px; cursor: pointer; flex-shrink: 0;
         }
         .quadrado-num.atual { background: var(--branco); color: var(--marrom-header); }
+        .quadrado-num:focus-visible { outline: 2px solid var(--dourado); outline-offset: -2px; }
         .quadrado-num.verde { background: var(--verde-acerto); color: var(--branco); }
         .quadrado-num.vermelho { background: var(--vermelho-erro); color: var(--branco); }
         .quadrado-num.cinza { background: var(--cinza-nulo); color: var(--branco); }

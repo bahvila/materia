@@ -80,3 +80,6 @@ textarea { resize: vertical; }
 .admin-tag-options input[type="checkbox"] { width: 18px; height: 18px; margin: 0; flex-shrink: 0; }
 .admin-navigation { max-width: 100%; flex-wrap: wrap; }
 #adm-ap-tags, #adm-sim-tags { min-height: 100px; }
+.admin-tag-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.admin-tag-row input { flex: 1 1 150px; min-width: 0; margin: 0; }
+.admin-tag-row button { flex: 0 0 auto; }
