@@ -670,7 +670,7 @@ function selecionarConteudoTagsAdmin() {
 }
 
 async function criarTagAdmin() {
-    const nome = document.getElementById('adm-tag-nome').value.trim();
+    const nome = document.getElementById('adm-tag-nome').value.trim().toUpperCase();
     if (!nome || nome.length > 80) return definirStatus('status-tags', 'Informe um nome com at\u00e9 80 caracteres.', 'error');
     const button = document.getElementById('adm-tag-criar');
     button.disabled = true;
@@ -733,7 +733,7 @@ async function carregarTagsFormularioAdmin(tipo, selecionadas) {
     }
 }
 async function alterarTagAdmin(tag, nome, linha) {
-    const novoNome = nome === null ? null : nome.trim();
+    const novoNome = nome === null ? null : nome.trim().toUpperCase();
     if (novoNome !== null && (!novoNome || novoNome.length > 80)) {
         return definirStatus('status-tags', 'Informe um nome com at\u00e9 80 caracteres.', 'error');
     }
