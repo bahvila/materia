@@ -918,11 +918,15 @@ let aguardandoEscolherApostilaParaCupom = false;
                             </div>
                         </div>
                     </div>
-                    <button class="btn-excluir-lateral" title="Excluir" onclick="pedirRemoverSimulado(event, '${sim.id}', '${sim.area}', '${sim.assunto}')">
+                    <button type="button" class="btn-excluir-lateral" title="Excluir" aria-label="Remover simulado">
                         <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                     </button>
                 </div>`;
             }).join('');
+            container.querySelectorAll('.btn-excluir-lateral').forEach((button, index) => {
+                const sim = salvos[index];
+                button.onclick = event => pedirRemoverSimulado(event, sim.id, sim.area, sim.assunto);
+            });
         }
 
         function pedirRemoverSimulado(event, idSimulado, area, assunto) {
@@ -933,13 +937,18 @@ let aguardandoEscolherApostilaParaCupom = false;
         }
 
         async function confirmarRemoveSimulado() {
-            fecharModal('modal-confirm-remove');
-            if (idSimuladoParaRemover) {
-                const novaLista = (perfilFirestore.simuladosAdicionados || []).filter(s => s.id !== idSimuladoParaRemover);
-                await atualizarDadosUsuarioNoFirestore({ simuladosAdicionados: novaLista });
+            if (!idSimuladoParaRemover || !usuarioAtual) return;
+            const novaLista = (perfilFirestore.simuladosAdicionados || []).filter(s => s.id !== idSimuladoParaRemover);
+            try {
+                await db.collection('usuarios').doc(usuarioAtual.uid).set({ simuladosAdicionados: novaLista }, { merge: true });
+                perfilFirestore.simuladosAdicionados = novaLista;
                 idSimuladoParaRemover = null;
+                fecharModal('modal-confirm-remove');
                 renderizarSimuladosSalvosNoLobby();
                 mostrarToast('success', 'O simulado foi removido do seu painel.', { title: 'Simulado removido' });
+            } catch (error) {
+                mostrarToast('error', 'Não foi possível remover o simulado. Tente novamente.', { title: 'Erro ao remover simulado' });
+                console.error('Erro ao remover simulado:', error);
             }
         }
 
