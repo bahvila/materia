@@ -620,9 +620,21 @@ async function carregarTagsAdmin() {
         lista.replaceChildren();
         if (!tagsAdmin.length) lista.textContent = 'Nenhuma tag cadastrada para este tipo.';
         tagsAdmin.forEach(tag => {
-            const item = document.createElement('span');
-            item.className = 'admin-tag-pill';
-            item.textContent = tag.nome;
+            const item = document.createElement('div');
+            item.className = 'admin-tag-row';
+            const nome = document.createElement('input');
+            nome.value = tag.nome;
+            nome.maxLength = 80;
+            nome.setAttribute('aria-label', `Nome da tag ${tag.nome}`);
+            const editar = document.createElement('button');
+            editar.className = 'admin-secondary-button';
+            editar.textContent = 'Salvar';
+            editar.onclick = () => alterarTagAdmin(tag, nome.value, item);
+            const excluir = document.createElement('button');
+            excluir.className = 'admin-secondary-button';
+            excluir.textContent = 'Excluir';
+            excluir.onclick = () => alterarTagAdmin(tag, null, item);
+            item.append(nome, editar, excluir);
             lista.appendChild(item);
         });
         conteudoSelect.replaceChildren(new Option('Selecione...', ''));
@@ -719,4 +731,30 @@ async function carregarTagsFormularioAdmin(tipo, selecionadas) {
         select.replaceChildren(new Option('Erro ao carregar tags. Reabra esta aba.', ''));
         definirStatus(tipo === 'apostila' ? 'status-ap' : 'status-sim', error.message, 'error');
     }
+}
+async function alterarTagAdmin(tag, nome, linha) {
+    const novoNome = nome === null ? null : nome.trim();
+    if (novoNome !== null && (!novoNome || novoNome.length > 80)) {
+        return definirStatus('status-tags', 'Informe um nome com at\u00e9 80 caracteres.', 'error');
+    }
+    if (novoNome === null && !await confirmarAcao({
+        title: 'Excluir tag?',
+        message: `A tag "${tag.nome}" ser\u00e1 removida dos conte\u00fados vinculados. Os conte\u00fados ser\u00e3o mantidos.`,
+        confirmLabel: 'Excluir tag', tone: 'danger',
+    })) return;
+    const controles = [...linha.querySelectorAll('input, button')];
+    controles.forEach(element => { element.disabled = true; });
+    try {
+        const { error } = await window.supabase.rpc('manage_content_tag', { p_id: tag.id, p_nome: novoNome });
+        if (error) throw error;
+        const select = document.getElementById(tag.tipo === 'apostila' ? 'adm-ap-tags' : 'adm-sim-tags');
+        const selecionadas = [...select.selectedOptions].map(option => option.value)
+            .flatMap(valor => valor === tag.nome ? (novoNome === null ? [] : [novoNome]) : [valor]);
+        await carregarTagsAdmin();
+        await carregarTagsFormularioAdmin(tag.tipo, selecionadas);
+        sincronizarPortal(tag.tipo === 'apostila' ? 'apostilas' : 'simulados');
+        definirStatus('status-tags', novoNome === null ? 'Tag exclu\u00edda.' : 'Tag atualizada.');
+    } catch (error) {
+        definirStatus('status-tags', error.code === '23505' ? 'J\u00e1 existe uma tag com este nome para este tipo.' : error.message, 'error');
+    } finally { controles.forEach(element => { element.disabled = false; }); }
 }
