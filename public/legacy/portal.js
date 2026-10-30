@@ -270,6 +270,7 @@
             const isPremium = perfilFirestore.isPremium === true;
             const isAdmin = ['admin', 'super_admin'].includes(perfilFirestore.tipoUsuario);
             window.portalAdminAuthorized = isAdmin;
+            if (isAdmin && window.portalCurrentRoute().startsWith('/administrador/')) mudarSeparador('administrador', false);
             document.getElementById('btn-banner-premium').style.display = isPremium ? 'none' : 'block';
             document.getElementById('badge-voce-premium').style.display = isPremium ? 'inline-flex' : 'none';
 
@@ -471,6 +472,7 @@ let aguardandoEscolherApostilaParaCupom = false;
             }
             renderizarCatalogoApostilas();
             renderizarBibliotecaAluno();
+            restaurarApostilaPeloHash();
         }
 
         function executarBuscaInicial() {
@@ -671,8 +673,26 @@ let aguardandoEscolherApostilaParaCupom = false;
         let pageIsRendering = false, pageNumIsPending = null, modoAmostraGratis = false;
         const scale = 3, canvas = document.getElementById('pdf-render'), ctx = canvas.getContext('2d');
 
+        async function gerarHashApostila(id) {
+            const bytes = new TextEncoder().encode(`apostila:${id}`);
+            const digest = await crypto.subtle.digest('SHA-256', bytes);
+            return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function restaurarApostilaPeloHash() {
+            const hash = window.portalCurrentRoute().split('#')[1] || '';
+            const match = hash.match(/^leitor\/([a-f0-9]{64})$/);
+            if (!match || !catalogoApostilas.length) return;
+            const candidatos = await Promise.all(catalogoApostilas.map(async ap => ({ ap, hash: await gerarHashApostila(ap.id) })));
+            if (window.portalCurrentRoute() !== `/apostila#${hash}`) return;
+            const encontrado = candidatos.find(item => item.hash === match[1]);
+            if (encontrado) abrirDetalheApostilaPorId(encontrado.ap.id, false);
+        }
+
         async function iniciarLeituraPDF(apenasTeste20Paginas) {
             const idAtual = apostilaSelecionada.id || "admin-default";
+            const hashLeitor = await gerarHashApostila(idAtual);
+            window.history.replaceState(window.history.state, '', window.portalRouteUrl(`/apostila#leitor/${hashLeitor}`));
 
             if (!apenasTeste20Paginas && !(perfilFirestore.bibliotecaIds || []).includes(idAtual)) {
                 const novaBib = [...(perfilFirestore.bibliotecaIds || []), idAtual];
@@ -756,6 +776,7 @@ let aguardandoEscolherApostilaParaCupom = false;
         }
 
         function fecharLeitorPDF() {
+            window.history.replaceState(window.history.state, '', window.portalRouteUrl('/apostila'));
             document.querySelectorAll('.subview-apostila').forEach(v => v.classList.remove('active'));
             document.getElementById('sub-detalhe').classList.add('active');
         }
@@ -1288,54 +1309,4 @@ let aguardandoEscolherApostilaParaCupom = false;
             carregarApostilasDoFirebase();
             carregarSimuladosDoFirebase();
         });
-        // Navegação persistente entre as páginas principais
-        const rotasPorSeparador = {
-            inicio: '/inicio',
-            apostila: '/apostila',
-            simulados: '/simulados',
-            biblioteca: '/biblioteca'
-        };
-        const titulosPorSeparador = {
-            inicio: 'Matéria',
-            apostila: 'Apostila | Matéria',
-            simulados: 'Simulados | Matéria',
-            biblioteca: 'Biblioteca | Matéria'
-        };
-        const mudarSeparadorOriginal = window.mudarSeparador;
-
-        function separadorDaUrl() {
-            const caminho = window.location.pathname.replace(/\/+$/, '') || '/';
-            const rotasAceitas = {
-                '/': 'inicio',
-                '/inicio': 'inicio',
-                '/apostila': 'apostila',
-                '/apostilas': 'apostila',
-                '/simulado': 'simulados',
-                '/simulados': 'simulados',
-                '/biblioteca': 'biblioteca'
-            };
-            return rotasAceitas[caminho] || 'inicio';
-        }
-
-        window.mudarSeparador = function(id, atualizarEndereco = true) {
-            if (!rotasPorSeparador[id]) id = 'inicio';
-            mudarSeparadorOriginal(id);
-            document.title = titulosPorSeparador[id];
-
-            if (atualizarEndereco) {
-                const destino = rotasPorSeparador[id];
-                if (window.location.pathname !== destino) {
-                    window.history.pushState({ separador: id }, '', destino);
-                }
-            }
-        };
-
-        window.addEventListener('popstate', () => {
-            window.mudarSeparador(separadorDaUrl(), false);
-        });
-
-        const separadorInicial = separadorDaUrl();
-        window.mudarSeparador(separadorInicial, false);
-        if (window.location.pathname !== rotasPorSeparador[separadorInicial]) {
-            window.history.replaceState({ separador: separadorInicial }, '', rotasPorSeparador[separadorInicial]);
-        }
+        // Routing is managed by src/legacy/portalNavigation.js.

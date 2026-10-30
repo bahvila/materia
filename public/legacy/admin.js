@@ -49,10 +49,10 @@
 
         function secaoAdminAtual() {
             try {
-                const parentMatch = window.parent.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons|tags)/);
+                const parentMatch = (window.parent.portalCurrentRoute?.() || window.parent.location.pathname).match(/^\/administrador\/(apostilas|simulados|cupons|tags)/);
                 if (parentMatch) return parentMatch[1];
             } catch (_) { /* iframe isolado: usa a query local */ }
-            const querySection = new URLSearchParams(window.location.search).get('section');
+            const querySection = new URLSearchParams((window.portalCurrentRoute?.() || window.location.search).split('?').pop()).get('section');
             return adminSections.includes(querySection) ? querySection : 'apostilas';
         }
 
@@ -64,12 +64,14 @@
             if (target === 'tags') carregarTagsAdmin();
             if (target === 'apostilas') carregarTagsFormularioAdmin('apostila');
             if (target === 'simulados') carregarTagsFormularioAdmin('simulado');
-            if (updateAddress) {
+            if (updateAddress && window.parent === window) {
+                window.history.pushState({}, '', window.portalRouteUrl(`/admin?section=${target}`));
+            } else if (updateAddress) {
                 try {
-                    window.parent.history.pushState({ separador: 'administrador', adminSection: target }, '', `/administrador/${target}`);
+                    window.parent.history.pushState({ separador: 'administrador', adminSection: target }, '', window.parent.portalRouteUrl(`/administrador/${target}`));
                     window.parent.document.title = `${target.charAt(0).toUpperCase() + target.slice(1)} | Administrador | Matéria`;
                 } catch (_) {
-                    window.history.pushState({}, '', `/admin?section=${target}`);
+                    window.history.pushState({}, '', window.portalRouteUrl(`/admin?section=${target}`));
                 }
             }
         }

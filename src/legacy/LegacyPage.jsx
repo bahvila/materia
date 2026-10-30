@@ -4,6 +4,7 @@ import { flushSync } from 'react-dom'
 import { PortalHeader } from '../components/portal/PortalHeader'
 import { portalModalComponents } from '../components/portal/portalComponentRegistry'
 import { navigatePortal, sectionFromPath } from './portalNavigation'
+import { currentRoute, routeUrl } from './hashedRoutes'
 import { installSupabaseFirebaseAdapter } from '../lib/supabaseFirebaseAdapter'
 import { ToastProvider } from '../components/feedback/ToastProvider'
 import { installToastBridge } from '../lib/toast'
@@ -62,12 +63,15 @@ export function LegacyPage({ page }) {
             const initialSection = sectionFromPath()
             navigatePortal(initialSection, {
               container: containerRef.current,
-              historyMode: window.location.pathname === `/inicio` || window.location.pathname === `/${initialSection}` ? 'none' : 'replace',
+              historyMode: 'none',
             })
             window.mudarSeparador = (section, updateAddress = true) => navigatePortal(section, {
               container: containerRef.current,
               historyMode: updateAddress ? 'push' : 'none',
             })
+          }
+          if (page === 'admin') {
+            window.history.replaceState(window.history.state, '', routeUrl(currentRoute()))
           }
           script = document.createElement('script')
           script.src = `/legacy/${page}.js`
@@ -96,12 +100,17 @@ export function LegacyPage({ page }) {
     const handleHistoryNavigation = () => {
       if (page === 'portal' && containerRef.current) {
         navigatePortal(sectionFromPath(), { container: containerRef.current, historyMode: 'none' })
+      } else if (page === 'admin') {
+        const section = new URLSearchParams(currentRoute().split('?')[1] || '').get('section') || 'apostilas'
+        window.navegarAdmin?.(section, false)
       }
     }
     window.addEventListener('popstate', handleHistoryNavigation)
+    window.addEventListener('hashchange', handleHistoryNavigation)
     return () => {
       active = false
       window.removeEventListener('popstate', handleHistoryNavigation)
+      window.removeEventListener('hashchange', handleHistoryNavigation)
       script?.remove()
       componentRoots.forEach((root) => root.unmount())
       stylesheet?.remove()

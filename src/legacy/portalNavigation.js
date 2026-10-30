@@ -1,3 +1,5 @@
+import { currentRoute, routeUrl } from './hashedRoutes'
+
 export const portalRoutes = {
   inicio: '/inicio',
   apostila: '/apostila',
@@ -14,8 +16,8 @@ const portalTitles = {
   administrador: 'Administrador | Matéria',
 }
 
-export function sectionFromPath(pathname = window.location.pathname) {
-  const path = pathname.replace(/\/+$/, '') || '/'
+export function sectionFromPath(pathname = currentRoute()) {
+  const path = pathname.split('#')[0].replace(/\/+$/, '') || '/'
   const acceptedRoutes = {
     '/': 'inicio',
     '/inicio': 'inicio',
@@ -42,7 +44,7 @@ export function navigatePortal(section, { container = document, historyMode = 'p
 
   if (target === 'administrador') {
     const frame = container.querySelector('#admin-legacy-frame')
-    const adminSection = window.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons|tags)/)?.[1] || 'apostilas'
+    const adminSection = currentRoute().match(/^\/administrador\/(apostilas|simulados|cupons|tags)/)?.[1] || 'apostilas'
     const frameSource = `/admin?section=${adminSection}`
     if (frame && !frame.src) frame.src = frameSource
     else if (frame?.contentWindow?.navegarAdmin) frame.contentWindow.navegarAdmin(adminSection, false)
@@ -51,6 +53,7 @@ export function navigatePortal(section, { container = document, historyMode = 'p
   if (target === 'apostila') {
     container.querySelectorAll('.subview-apostila').forEach((view) => view.classList.remove('active'))
     container.querySelector('#sub-catalogo')?.classList.add('active')
+    window.restaurarApostilaPeloHash?.()
   }
   if (target === 'simulados') {
     container.querySelectorAll('.view-simulado').forEach((view) => view.classList.remove('active'))
@@ -59,12 +62,19 @@ export function navigatePortal(section, { container = document, historyMode = 'p
   if (target === 'biblioteca') window.renderizarBibliotecaAluno?.()
 
   document.title = portalTitles[target]
-  const destination = target === 'administrador'
-    ? `/administrador/${window.location.pathname.match(/^\/administrador\/(apostilas|simulados|cupons|tags)/)?.[1] || 'apostilas'}`
+  const destinationPath = target === 'administrador'
+    ? `/administrador/${currentRoute().match(/^\/administrador\/(apostilas|simulados|cupons|tags)/)?.[1] || 'apostilas'}`
     : portalRoutes[target]
-  if (requestedTarget !== target && window.location.pathname !== destination) {
-    window.history.replaceState({ separador: target }, '', destination)
-  } else if (historyMode !== 'none' && window.location.pathname !== destination) {
-    window.history[historyMode === 'replace' ? 'replaceState' : 'pushState']({ separador: target }, '', destination)
+  const readerRoute = currentRoute()
+  const destination = routeUrl(historyMode === 'none' && target === 'apostila' && readerRoute.includes('#leitor/') ? readerRoute : destinationPath)
+  if (requestedTarget !== target && window.portalAdminAuthorized === undefined) {
+    const pendingUrl = routeUrl(currentRoute())
+    if (window.location.pathname + window.location.search + window.location.hash !== pendingUrl) {
+      window.history.replaceState(window.history.state, '', pendingUrl)
+    }
+    return
+  }
+  if (window.location.pathname + window.location.search + window.location.hash !== destination) {
+    window.history[historyMode === 'push' ? 'pushState' : 'replaceState']({ separador: target }, '', destination)
   }
 }
