@@ -19,7 +19,7 @@ npm run build
 
 Para publicar a homologação no GitHub Pages com `materiaedu.com`, siga o
 [guia de homologação](docs/homologacao-github-pages.md). O workflow está em
-`.github/workflows/homologacao-pages.yml` e publica a branch `Develop`.
+`.github/workflows/homologacao-pages.yml` e publica a branch `main`.
 
 Com o Docker Desktop iniciado e configurado para contêineres Linux, preencha
 `.env.local` usando `.env.example` como referência e execute:

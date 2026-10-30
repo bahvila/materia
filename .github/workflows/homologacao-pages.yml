@@ -2,14 +2,16 @@ name: Homologacao - GitHub Pages
 
 on:
   push:
-    branches: [Develop]
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: github-pages
+  group: github-pages-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -40,13 +42,15 @@ jobs:
           touch dist/.nojekyll
           cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
       - uses: actions/upload-pages-artifact@v4
+        if: github.event_name != 'pull_request'
         with:
           path: dist
 
   deploy:
     needs: build
-    if: github.ref == 'refs/heads/Develop'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

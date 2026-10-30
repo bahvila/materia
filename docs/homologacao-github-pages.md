@@ -6,7 +6,7 @@ o Storage continuam no Supabase. O workflow não executa migrations nem altera o
 ## 1. Preparar o repositório
 
 Envie estes arquivos ao seu repositório no GitHub. A branch usada pelo workflow é
-`Develop`, com D maiúsculo, conforme a branch atual do projeto. Se mudar de branch,
+`main`. Se mudar de branch,
 altere tanto `on.push.branches` quanto a condição `deploy.if` no workflow.
 
 Em **Settings → Secrets and variables → Actions → Variables**, crie as
@@ -27,7 +27,7 @@ Para separar os testes, crie outro projeto e aplique nele as migrations de
 
 Em **Settings → Pages → Build and deployment → Source**, selecione
 **GitHub Actions**. Se houver regras no environment `github-pages`, permita
-deploys da branch `Develop`.
+deploys da branch `main`.
 
 ## 2. Configurar o domínio
 
@@ -70,16 +70,19 @@ seus callbacks, além de cadastrar um administrador no banco de homologação.
 
 ## 4. Publicar
 
-Faça commit e push para `Develop`. Na aba **Actions**, acompanhe o workflow
+Faça commit na sua branch de trabalho e abra um pull request para `main`. O
+workflow valida o build no pull request; após a mesclagem, o push em `main`
+publica o site. Também é possível fazer push direto para `main` se as regras
+do repositório permitirem. Na aba **Actions**, acompanhe o workflow
 **Homologacao - GitHub Pages**. Ele instala as dependências, executa lint,
 compila e publica `dist` somente se as etapas anteriores passarem.
 
 Para repetir manualmente, use **Actions → Homologacao - GitHub Pages → Run
-workflow**, selecionando `Develop`. O workflow precisa existir também na branch
+workflow**, selecionando `main`. O workflow precisa existir também na branch
 padrão do repositório para que a opção de disparo manual apareça.
 
 Acesse `https://materiaedu.com` e valide login, painel administrativo, leitura de
-PDF, filtros, simulados e recarga de links com hash. Cada push em `Develop`
+PDF, filtros, simulados e recarga de links com hash. Cada push em `main`
 publicará uma nova versão. Para voltar a uma versão anterior, reverta o commit
 no Git e envie a reversão para a mesma branch.
 
