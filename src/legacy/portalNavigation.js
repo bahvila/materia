@@ -54,7 +54,7 @@ export function navigatePortal(section, { container = document, historyMode = 'p
   }
   if (target === 'simulados') {
     container.querySelectorAll('.view-simulado').forEach((view) => view.classList.remove('active'))
-    container.querySelector('#sim-view-lobby')?.classList.add('active')
+    container.querySelector('#sim-view-catalogo')?.classList.add('active')
   }
   if (target === 'biblioteca') window.renderizarBibliotecaAluno?.()
 

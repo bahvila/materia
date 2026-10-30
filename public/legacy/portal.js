@@ -137,7 +137,7 @@
             }
             if (id === 'simulados') {
                 document.querySelectorAll('.view-simulado').forEach(v => v.classList.remove('active'));
-                document.getElementById('sim-view-lobby').classList.add('active');
+                document.getElementById('sim-view-catalogo').classList.add('active');
             }
             if (id === 'biblioteca') {
                 renderizarBibliotecaAluno();
@@ -487,7 +487,7 @@ let aguardandoEscolherApostilaParaCupom = false;
             filtroApostilaAtivo = tag;
             document.getElementById('texto-chip-apostila').innerText = tag;
             document.getElementById('chip-filtro-apostila').style.display = 'inline-flex';
-            document.getElementById('popover-filtro-apostila').classList.remove('active');
+            document.getElementById('popover-filtro-apostila')?.classList.remove('active');
             renderizarCatalogoApostilas();
         }
 
@@ -498,13 +498,36 @@ let aguardandoEscolherApostilaParaCupom = false;
             renderizarCatalogoApostilas();
         }
 
+        let filtroSimuladoAtivo = '';
+        function textoCatalogo(valor) {
+            return String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+        function tagsCatalogo(item, fallback) {
+            const tags = Array.isArray(item.tags) ? item.tags : String(item.tags || '').split(',');
+            return [...new Set([item.categoria, ...tags].map(tag => String(tag || '').trim()).filter(Boolean))].concat(item.categoria || tags.some(tag => String(tag).trim()) ? [] : [fallback]);
+        }
+        function renderizarTagsCatalogo(id, tags, selecionada, selecionar) {
+            const container = document.getElementById(id);
+            if (!container) return;
+            container.replaceChildren();
+            ['', ...new Set(tags.filter(Boolean))].forEach(tag => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'catalog-tag';
+                button.textContent = tag || 'Todas os filtros';
+                button.setAttribute('aria-pressed', String(tag === selecionada));
+                button.onclick = () => selecionar(tag);
+                container.appendChild(button);
+            });
+        }
+
         function renderizarCatalogoApostilas() {
             const grid = document.getElementById('grid-catalogo-apostilas');
-            const termo = (document.getElementById('input-pesquisa-apostila').value || filtroApostilaAtivo).toLowerCase();
+            renderizarTagsCatalogo('catalog-tags-apostilas', catalogoApostilas.flatMap(ap => tagsCatalogo(ap, ap.titulo)), filtroApostilaAtivo, tag => tag ? aplicarTagApostila(tag) : limparFiltroApostila());
+            const termo = textoCatalogo(document.getElementById('input-pesquisa-apostila').value);
             
             const filtradas = catalogoApostilas.filter(ap => 
-                ap.titulo.toLowerCase().includes(termo) || 
-                ap.subtitulo.toLowerCase().includes(termo)
+                (!filtroApostilaAtivo || textoCatalogo([ap.titulo, ap.subtitulo, ...tagsCatalogo(ap, ap.titulo)].join(' ')).includes(textoCatalogo(filtroApostilaAtivo))) && textoCatalogo([ap.titulo, ap.subtitulo, ...tagsCatalogo(ap, ap.titulo)].join(' ')).includes(termo)
             );
 
             grid.innerHTML = filtradas.map(ap => `
@@ -789,6 +812,7 @@ let aguardandoEscolherApostilaParaCupom = false;
         function voltarParaLobbySimulado() {
             document.querySelectorAll('.view-simulado').forEach(v => v.classList.remove('active'));
             document.getElementById('sim-view-lobby').classList.add('active');
+            renderizarSimuladosSalvosNoLobby();
         }
 
         function abrirTelaHistorico() {
@@ -802,19 +826,17 @@ let aguardandoEscolherApostilaParaCupom = false;
             if (!container) return;
 
             const termo = (document.getElementById('input-busca-catalogo-simulado').value || "").toLowerCase();
-            const filtrados = listaSimuladosDisponiveis.filter(sim => (sim.nome || "").toLowerCase().includes(termo));
+            renderizarTagsCatalogo('catalog-tags-simulados', listaSimuladosDisponiveis.flatMap(sim => tagsCatalogo(sim, extrairAreaAssunto(sim.nome).area)), filtroSimuladoAtivo, tag => { filtroSimuladoAtivo = tag; renderizarListaSimulados(); });
+            const filtrados = listaSimuladosDisponiveis.filter(sim => (!filtroSimuladoAtivo || tagsCatalogo(sim, extrairAreaAssunto(sim.nome).area).includes(filtroSimuladoAtivo)) && textoCatalogo([sim.nome, ...tagsCatalogo(sim, '')].join(' ')).includes(textoCatalogo(termo)));
             
             container.innerHTML = filtrados.map(sim => {
                 const info = extrairAreaAssunto(sim.nome);
                 const imagemExibir = sim.capaUrl ? sim.capaUrl : `capasimulado${info.areaLimpa}.png`;
 
                 return `
-                <div class="card-simulado-banner" onclick="pedirAdicionarSimulado('${sim.nome}', '${sim.id}')" style="margin-bottom: 15px;">
-                    <div class="info">
-                        <h2>${info.area}</h2>
-                        <p>${info.assunto}</p>
-                    </div>
-                    <img src="${imagemExibir}" class="capa" onerror="this.style.display='none'">
+                <div class="card-apostila catalog-card-simulado" onclick="pedirAdicionarSimulado('${sim.nome}', '${sim.id}')" style="margin-bottom: 15px;">
+                    <img src="${imagemExibir}" alt="${info.area}" onerror="this.style.visibility='hidden'">
+                    <h3>${info.area}</h3><p>${info.assunto}</p>
                 </div>`;
             }).join('');
         }
@@ -844,13 +866,18 @@ let aguardandoEscolherApostilaParaCupom = false;
             voltarParaLobbySimulado();
         }
 
+        let filtroSimuladoSalvoAtivo = '';
         function renderizarSimuladosSalvosNoLobby() {
             const container = document.getElementById('container-simulado-criado');
             if (!container) return;
 
-            const salvos = perfilFirestore.simuladosAdicionados || [];
+            const todos = perfilFirestore.simuladosAdicionados || [];
+            const tagsDoSalvo = sim => tagsCatalogo(listaSimuladosDisponiveis.find(item => item.id === sim.id) || {}, sim.area || extrairAreaAssunto(sim.nome).area);
+            renderizarTagsCatalogo('catalog-tags-salvos', todos.flatMap(tagsDoSalvo), filtroSimuladoSalvoAtivo, tag => { filtroSimuladoSalvoAtivo = tag; renderizarSimuladosSalvosNoLobby(); });
+            const termo = textoCatalogo(document.getElementById('input-busca-simulados-salvos')?.value);
+            const salvos = todos.filter(sim => (!filtroSimuladoSalvoAtivo || tagsDoSalvo(sim).includes(filtroSimuladoSalvoAtivo)) && textoCatalogo([sim.nome, sim.area, sim.assunto, ...tagsDoSalvo(sim)].join(' ')).includes(termo));
             if (salvos.length === 0) {
-                container.innerHTML = `<p style="color:#666; font-weight:600;">Nenhum simulado adicionado ao seu painel. Clique em <strong>NOVO SIMULADO +</strong> para escolher.</p>`;
+                container.innerHTML = '<p class="catalog-empty">' + (todos.length ? 'Nenhum simulado encontrado para esta busca.' : 'Você ainda não adicionou simulados. Clique em Novo simulado + para escolher.') + '</p>';
                 return;
             }
 
@@ -859,16 +886,16 @@ let aguardandoEscolherApostilaParaCupom = false;
                 const imagemExibir = (simBanco && simBanco.capaUrl) ? simBanco.capaUrl : `capasimulado${sim.areaLimpa}.png`;
 
                 return `
-                <div class="linha-lobby-banner">
-                    <div class="card-simulado-banner" onclick="fluxoClicarSimuladoParaConfigurar('${sim.nome}', '${sim.id}')" style="margin-bottom: 0;">
+                <div class="catalog-saved-item">
+                    <div class="card-apostila" onclick="fluxoClicarSimuladoParaConfigurar('${sim.nome}', '${sim.id}')" style="margin-bottom: 0;">
+                        <img src="${imagemExibir}" alt="${sim.area}" onerror="this.style.visibility='hidden'">
                         <div class="info">
-                            <h2>${sim.area}</h2>
+                            <h3>${sim.area}</h3>
                             <p>${sim.assunto}</p>
                             <div class="link-materiais-yellow" onclick="event.stopPropagation(); mudarSeparador('apostila'); abrirDetalheApostilaPorId('admin-default', false);">
                                 Materiais recomendados ↗
                             </div>
                         </div>
-                        <img src="${imagemExibir}" class="capa" onerror="this.style.display='none'">
                     </div>
                     <button class="btn-excluir-lateral" title="Excluir" onclick="pedirRemoverSimulado(event, '${sim.id}', '${sim.area}', '${sim.assunto}')">
                         <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>

@@ -50,7 +50,7 @@ export function LegacyPage({ page }) {
         stylesheet.href = `/legacy/${page}.css`
         stylesheet.dataset.legacyPage = page
         document.head.appendChild(stylesheet)
-        setMarkup(html)
+        flushSync(() => setMarkup(html))
 
         requestAnimationFrame(() => {
           if (!active) return
