@@ -36,13 +36,16 @@ jobs:
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo 'Configure VITE_SUPABASE_PUBLISHABLE_KEY nas Repository variables.'; exit 1; }
       - run: npm ci
       - run: npm run check
+      - uses: actions/configure-pages@v5
+        id: pages
+        if: github.event_name != 'pull_request'
       - run: npm run build
+        env:
+          VITE_BASE_PATH: ${{ steps.pages.outputs.base_path && format('{0}/', steps.pages.outputs.base_path) || '/' }}
       - name: Preparar arquivos estaticos
         run: |
           touch dist/.nojekyll
           cp dist/index.html dist/404.html
-      - uses: actions/configure-pages@v5
-        if: github.event_name != 'pull_request'
       - uses: actions/upload-pages-artifact@v4
         if: github.event_name != 'pull_request'
         with:

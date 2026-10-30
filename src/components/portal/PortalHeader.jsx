@@ -1,3 +1,4 @@
+import { sitePath } from '../../lib/sitePaths'
 import { LegacyButton } from '../ui/LegacyButton'
 import { callLegacy } from '../../legacy/legacyBridge'
 import { navigatePortal } from '../../legacy/portalNavigation'
@@ -15,7 +16,7 @@ export function PortalHeader() {
     <>
       <div className="header-left">
         <img
-          src="/assets/íconemateriamarrom.png"
+          src={sitePath('/assets/íconemateriamarrom.png')}
           alt="MATÉRIA"
           className="logo-header"
           onClick={() => navigatePortal('inicio')}
@@ -39,18 +40,18 @@ export function PortalHeader() {
       <div className="header-right">
         <img
           id="btn-banner-premium"
-          src="/assets/premium.png"
+          src={sitePath('/assets/premium.png')}
           alt="Matéria Premium"
           className="btn-img-premium"
           onClick={() => callLegacy('abrirModal', 'modal-premium')}
         />
 
         <div id="badge-voce-premium" className="pill-voce-premium" onClick={() => callLegacy('abrirModal', 'modal-premium')}>
-          <img src="/assets/premium.png" alt="Você é Premium" />
+          <img src={sitePath('/assets/premium.png')} alt="Você é Premium" />
         </div>
 
         <LegacyButton id="btn-cupom-topo" className="btn-header-cupom" title="Meus Cupons / Inserir Código" onLegacyClick="togglePopoverCupons">
-          <img src="/assets/icone-cupom.png" alt="%" />
+          <img src={sitePath('/assets/icone-cupom.png')} alt="%" />
         </LegacyButton>
 
         <LegacyButton id="btn-entrar-topo" className="btn-header-entrar" onLegacyClick="abrirModal" legacyArgs={['modal-auth']}>Entrar</LegacyButton>

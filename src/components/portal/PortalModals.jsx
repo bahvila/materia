@@ -1,3 +1,4 @@
+import { sitePath } from '../../lib/sitePaths'
 import { LegacyButton } from '../ui/LegacyButton'
 import { CloseModalButton, ConfirmationModal } from '../ui/LegacyModal'
 import { callLegacy } from '../../legacy/legacyBridge'
@@ -44,7 +45,7 @@ export function PremiumModal() {
           <BenefitList title="PREMIUM" benefits={premiumBenefits} premium />
         </div>
         <div className="coluna-direita-assinatura">
-          <img className="premium-marca-imagem" src="/assets/íconemateriapremium.png" alt="Matéria Premium" />
+          <img className="premium-marca-imagem" src={sitePath('/assets/íconemateriapremium.png')} alt="Matéria Premium" />
           <div className="preco-gigante">R$ 24,<small>99</small></div>
           <LegacyButton className="btn-dourado-assinar" onLegacyClick="abrirCheckoutPagamento" legacyArgs={['Assinatura Matéria Premium', '24,99', 'premium']}>ASSINE AGORA</LegacyButton>
         </div>
@@ -98,7 +99,7 @@ export function PaywallModal() {
   return (
     <div className="modal-marrom-padrao modal-narrow modal-centered">
       <CloseModalButton modalId="modal-paywall" />
-      <img src="/assets/estrelas.png" alt="" style={{ height: 42, marginBottom: 10 }} />
+      <img src={sitePath('/assets/estrelas.png')} alt="" style={{ height: 42, marginBottom: 10 }} />
       <h2 style={{ margin: '0 0 10px' }}>Você concluiu as 20 páginas de teste!</h2>
       <p style={{ fontSize: 15, opacity: .9, lineHeight: 1.5, marginBottom: 25 }}>Para continuar a leitura das 119 páginas desta apostila, escolha como deseja desbloquear o material completo:</p>
       <div className="modal-action-stack">
@@ -136,7 +137,7 @@ export function AuthModal() {
   return (
     <div className="modal-marrom-padrao modal-auth modal-centered">
       <CloseModalButton modalId="modal-auth" />
-      <img className="auth-modal-logo" src="/assets/logo-materia.png" alt="Matéria" />
+      <img className="auth-modal-logo" src={sitePath('/assets/logo-materia.png')} alt="Matéria" />
       <h3 className="auth-modal-title">Entrar na Plataforma</h3>
       <p id="aviso-acao-pendente" className="auth-modal-description">Entre para sincronizar simulados, cupons e sua biblioteca.</p>
       <div className="auth-modal-actions">
