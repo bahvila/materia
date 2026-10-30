@@ -45,7 +45,7 @@ export function navigatePortal(section, { container = document, historyMode = 'p
   if (target === 'administrador') {
     const frame = container.querySelector('#admin-legacy-frame')
     const adminSection = currentRoute().match(/^\/administrador\/(apostilas|simulados|cupons|tags)/)?.[1] || 'apostilas'
-    const frameSource = `/admin?section=${adminSection}`
+    const frameSource = routeUrl(`/admin?section=${adminSection}`)
     if (frame && !frame.src) frame.src = frameSource
     else if (frame?.contentWindow?.navegarAdmin) frame.contentWindow.navegarAdmin(adminSection, false)
   }
