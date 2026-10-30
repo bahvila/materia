@@ -1,0 +1,167 @@
+.materia-toast-region {
+  position: fixed;
+  z-index: 100000;
+  top: 88px;
+  right: 22px;
+  width: min(390px, calc(100vw - 32px));
+  display: grid;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.materia-toast {
+  --toast-accent: #4b342b;
+  position: relative;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 28px;
+  gap: 12px;
+  align-items: start;
+  overflow: hidden;
+  padding: 15px 14px 16px;
+  border: 1px solid rgba(75, 52, 43, .14);
+  border-left: 5px solid var(--toast-accent);
+  border-radius: 14px;
+  background: #fffdfb;
+  color: #33241f;
+  box-shadow: 0 18px 44px rgba(46, 31, 26, .18);
+  font-family: Arial, sans-serif;
+  pointer-events: auto;
+  animation: materia-toast-in .28s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.materia-toast--success { --toast-accent: #2f7a4d; }
+.materia-toast--error { --toast-accent: #bd3b35; }
+.materia-toast--warning { --toast-accent: #c17b17; }
+.materia-toast--info { --toast-accent: #6a4a3d; }
+
+.materia-toast__icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--toast-accent) 13%, white);
+  color: var(--toast-accent);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.materia-toast__content strong {
+  display: block;
+  margin: 1px 0 4px;
+  color: #3f2c25;
+  font-family: Georgia, serif;
+  font-size: 16px;
+}
+
+.materia-toast__content p {
+  margin: 0;
+  color: #6c5a53;
+  font-size: 13px;
+  line-height: 1.42;
+}
+
+.materia-toast__close {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #765f56;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.materia-toast__close:hover { background: #f1e9e5; color: #33241f; }
+
+.materia-toast__timer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--toast-accent);
+  transform-origin: left;
+  animation: materia-toast-timer linear forwards;
+}
+
+@keyframes materia-toast-in {
+  from { opacity: 0; transform: translate3d(26px, -8px, 0) scale(.97); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes materia-toast-timer { to { transform: scaleX(0); } }
+
+@media (max-width: 600px) {
+  .materia-toast-region { top: 72px; right: 16px; left: 16px; width: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .materia-toast, .materia-toast__timer { animation: none; }
+}
+
+.materia-confirm-backdrop {
+  position: fixed;
+  z-index: 100001;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(31, 22, 18, .58);
+  backdrop-filter: blur(3px);
+  animation: materia-confirm-backdrop-in .18s ease-out both;
+}
+
+.materia-confirm {
+  width: min(460px, 100%);
+  padding: 28px;
+  border: 1px solid rgba(75, 52, 43, .14);
+  border-radius: 18px;
+  background: #fffdfb;
+  color: #35251f;
+  box-shadow: 0 28px 70px rgba(25, 15, 11, .3);
+  font-family: Arial, sans-serif;
+  animation: materia-confirm-in .24s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.materia-confirm__mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 18px;
+  border-radius: 50%;
+  background: #f3ebe7;
+  color: #5a4035;
+  font-family: Georgia, serif;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.materia-confirm__mark--danger { background: #f9e8e6; color: #a93632; }
+.materia-confirm__content h2 { margin: 0 0 8px; font-family: Georgia, serif; font-size: 24px; }
+.materia-confirm__content p { margin: 0; color: #6d5a52; font-size: 14px; line-height: 1.55; }
+.materia-confirm__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 26px; }
+.materia-confirm__actions button { min-width: 112px; padding: 11px 18px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 750; }
+.materia-confirm__cancel { border: 1px solid #d8cbc5; background: #fff; color: #4b342b; }
+.materia-confirm__accept { border: 1px solid #4b342b; background: #4b342b; color: #fff; }
+.materia-confirm__accept--danger { border-color: #a93632; background: #a93632; }
+.materia-confirm__cancel:hover { background: #f5efec; }
+.materia-confirm__accept:hover { filter: brightness(.93); }
+
+@keyframes materia-confirm-backdrop-in { from { opacity: 0; } }
+@keyframes materia-confirm-in { from { opacity: 0; transform: translateY(12px) scale(.97); } }
+
+@media (max-width: 480px) {
+  .materia-confirm { padding: 23px; }
+  .materia-confirm__actions { flex-direction: column-reverse; }
+  .materia-confirm__actions button { width: 100%; }
+}
+
+.materia-confirm { max-height: calc(100dvh - 40px); overflow-y: auto; }
+.materia-confirm__content { overflow-wrap: anywhere; }
+@media (max-height: 500px) {
+  .materia-toast-region { top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; }
+}
