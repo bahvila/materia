@@ -1019,6 +1019,7 @@ let aguardandoEscolherApostilaParaCupom = false;
 
         function desenharPaginacaoTopoProva() {
             const container = document.getElementById('barra-paginacao-prova');
+            const scrollAnterior = container.scrollLeft;
             container.innerHTML = listaQuestoes.map((_, i) => {
                 let classe = "quadrado-num";
                 if (i === questaoAtualIndex) classe += " atual";
@@ -1027,8 +1028,18 @@ let aguardandoEscolherApostilaParaCupom = false;
                 } else if (respostasUsuario[i] && respostasUsuario[i].respondida) {
                     classe += " cinza";
                 }
-                return `<div class="${classe}" onclick="mostrarQuestaoProva(${i})">${i + 1}</div>`;
+                return `<button type="button" class="${classe}" aria-label="Questão ${i + 1}" ${i === questaoAtualIndex ? 'aria-current="step"' : ''} onclick="mostrarQuestaoProva(${i})">${i + 1}</button>`;
             }).join('');
+            container.scrollLeft = scrollAnterior;
+            const atual = container.querySelector('.atual');
+            if (!atual) return;
+            const limite = container.getBoundingClientRect();
+            const posicao = atual.getBoundingClientRect();
+            if (posicao.left < limite.left + 8) {
+                container.scrollLeft += posicao.left - limite.left - 8;
+            } else if (posicao.right > limite.right - 8) {
+                container.scrollLeft += posicao.right - limite.right + 8;
+            }
         }
 
         function mostrarQuestaoProva(index) {
