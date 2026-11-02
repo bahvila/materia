@@ -2,6 +2,8 @@ import { sitePath } from './sitePaths'
 import { requireSupabase, supabase } from './supabaseClient'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const APOSTILA_COLUMNS = 'id,titulo,slug,subtitulo,descricao,capa_path,preco_centavos,moeda,ano,categoria,tags,total_paginas,paginas_gratis,status,destaque,created_by,created_at,updated_at,published_at'
+const SIMULADO_COLUMNS = 'id,titulo,slug,descricao,imagem_path,categoria,tags,nivel,duracao_minutos,quantidade_questoes,is_premium,status,configuracao,preco_centavos,created_by,created_at,updated_at,published_at'
 
 class DocumentSnapshot {
   constructor(id, value) {
@@ -60,7 +62,7 @@ async function apostilaFromRow(row) {
     descricao: row.descricao || '',
     preco: legacyPriceFromCents(row.preco_centavos),
     capaUrl: storagePublicUrl('apostila-capas', row.capa_path),
-    pdfUrl: await pdfUrl(row.pdf_path),
+    pdfUrl: '',
     ano: row.ano ? String(row.ano) : '',
     categoria: row.categoria || '',
     tags: row.tags || [],
@@ -81,6 +83,7 @@ function apostilaToRow(value) {
     preco_centavos: centsFromLegacyPrice(value.preco),
     capa_path: value.capaUrl || value.capa_path || '',
     pdf_path: value.pdfUrl || value.pdf_path || '',
+    preview_pdf_path: value.previewPdfPath || null,
     ano: Number.parseInt(value.ano, 10) || null,
     categoria: value.categoria || null,
     tags: value.tags || [],
@@ -105,6 +108,7 @@ function simuladoFromRow(row) {
     filtros: config.filtros || {},
     ativo: row.status === 'publicado',
     isPremium: row.is_premium,
+    preco: legacyPriceFromCents(row.preco_centavos),
   }
 }
 
@@ -120,6 +124,7 @@ function simuladoToRow(value, documentId) {
     duracao_minutos: value.tempo_banca || value.duracao_minutos || 60,
     quantidade_questoes: value.questoes_banca || value.quantidade_questoes || 20,
     is_premium: value.isPremium || false,
+    preco_centavos: centsFromLegacyPrice(value.preco),
     status: value.ativo === false ? 'arquivado' : 'publicado',
     configuracao: { ...(value.configuracao || {}), filtros: value.filtros || {} },
     updated_at: new Date().toISOString(),
@@ -195,24 +200,27 @@ function couponToRow(value, documentId) {
 
 async function profileSnapshot(userId) {
   const client = requireSupabase()
-  const [{ data: profile, error }, { data: accesses }, { data: progress }, { data: subscriptions }] = await Promise.all([
+  const results = await Promise.all([
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
-    client.from('user_apostilas').select('apostila_id').eq('user_id', userId).is('revoked_at', null),
+    client.from('user_apostilas').select('apostila_id,expires_at').eq('user_id', userId).is('revoked_at', null),
     client.from('reading_progress').select('apostila_id,pagina_atual').eq('user_id', userId),
-    client.from('subscriptions').select('id,status,current_period_end,plans(nome,slug)').eq('user_id', userId).eq('status', 'active'),
+    client.from('subscriptions').select('id,status,current_period_end,plans(nome,slug)').eq('user_id', userId).in('status', ['active', 'trialing']),
+    client.from('user_simulados').select('simulado_id').eq('user_id', userId).is('revoked_at', null),
+    client.rpc('has_premium_access'),
   ])
-  throwIfError(error)
+  results.forEach(result => throwIfError(result.error))
+  const [{ data: profile }, { data: accesses }, { data: progress }, { data: subscriptions }, { data: simulados }, { data: isPremium }] = results
   if (!profile) return null
   const progressoPaginas = Object.fromEntries((progress || []).map((item) => [item.apostila_id, item.pagina_atual]))
-  const isPremium = (subscriptions || []).some((item) => !item.current_period_end || new Date(item.current_period_end) > new Date())
-  const activeSubscription = (subscriptions || []).find((item) => !item.current_period_end || new Date(item.current_period_end) > new Date())
+  const activeSubscription = (subscriptions || []).find((item) => item.plans?.slug === 'materia-premium' && new Date(item.current_period_end) > new Date())
   return {
     nome: profile.nome,
     email: profile.email,
     tipoUsuario: profile.tipo_usuario,
     isPremium,
     planoAssinado: activeSubscription?.plans || null,
-    bibliotecaIds: (accesses || []).map((item) => item.apostila_id),
+    bibliotecaIds: (accesses || []).filter(item => !item.expires_at || new Date(item.expires_at) > new Date()).map((item) => item.apostila_id),
+    simuladosComprados: (simulados || []).map(item => item.simulado_id),
     simuladosAdicionados: profile.metadata?.simuladosAdicionados || [],
     progressoPaginas,
     cupons: profile.metadata?.cupons || [],
@@ -247,17 +255,24 @@ async function saveProfile(userId, values, merge = true) {
   return row
 }
 
-async function findSimulado(identifier) {
+async function findSimulado(identifier, withQuestions = false) {
   const client = requireSupabase()
-  let query = client.from('simulados').select('*')
+  let query = client.from('simulados').select(SIMULADO_COLUMNS)
   query = UUID_PATTERN.test(identifier) ? query.eq('id', identifier) : query.eq('slug', identifier)
   const { data, error } = await query.maybeSingle()
   throwIfError(error)
+  if (data && withQuestions) data.questoes = await storedQuestions(data.id)
   return data
 }
 
+async function storedQuestions(identifier) {
+  const { data, error } = await requireSupabase().rpc('get_simulado_questions', { identifier })
+  throwIfError(error)
+  return data || []
+}
+
 async function ensureSimulado(identifier) {
-  const existing = await findSimulado(identifier)
+  const existing = await findSimulado(identifier, true)
   if (existing) return existing
   const title = identifier.replace(/^simulado[-_]?/i, '').split(/[-_]/).filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ') || 'Simulado'
@@ -266,7 +281,7 @@ async function ensureSimulado(identifier) {
     titulo: title,
     descricao: 'Simulado Completo',
     status: 'publicado',
-  }).select('*').single()
+  }).select(SIMULADO_COLUMNS).single()
   throwIfError(error)
   return data
 }
@@ -282,14 +297,15 @@ async function saveSimuladoQuestions(simulado, questions) {
 
 async function findStoredQuestion(collectionName, questionId) {
   if (collectionName !== 'questoes') {
-    const simulado = await findSimulado(collectionName)
+    const simulado = await findSimulado(collectionName, true)
     const question = (simulado?.questoes || []).find((item) => item.id === questionId)
     return { simulado, question }
   }
 
-  const { data, error } = await requireSupabase().from('simulados').select('id,slug,questoes')
+  const { data, error } = await requireSupabase().from('simulados').select('id,slug')
   throwIfError(error)
   for (const simulado of data || []) {
+    simulado.questoes = await storedQuestions(simulado.id)
     const question = (simulado.questoes || []).find((item) => item.id === questionId)
     if (question) return { simulado, question }
   }
@@ -302,17 +318,14 @@ async function listQuestions(collectionName, filters = [], limitValue) {
   if (collectionName === 'questoes') {
     const simuladoFilter = filters.find(([field, operator]) => field === 'simuladoId' && operator === '==')
     if (simuladoFilter) {
-      const simulado = await findSimulado(simuladoFilter[2])
-      rows = simulado?.questoes || []
+      rows = await storedQuestions(simuladoFilter[2])
     } else {
-      const result = await client.from('simulados').select('questoes')
+      const result = await client.from('simulados').select('id')
       throwIfError(result.error)
-      rows = (result.data || []).flatMap((simulado) => simulado.questoes || [])
+      rows = (await Promise.all((result.data || []).map(simulado => storedQuestions(simulado.id)))).flat()
     }
   } else {
-    const simulado = await findSimulado(collectionName)
-    if (!simulado) return []
-    rows = simulado.questoes || []
+    rows = await storedQuestions(collectionName)
   }
   rows = rows.filter((question) => matchesQuestionFilters(question, filters))
   return rows.slice(0, limitValue || rows.length).map(questionFromRow)
@@ -347,13 +360,13 @@ class CollectionReference {
     const client = requireSupabase()
     let values = []
     if (this.name === 'apostilas') {
-      let query = client.from('apostilas').select('*').order('created_at', { ascending: false })
+      let query = client.from('apostilas').select(APOSTILA_COLUMNS).order('created_at', { ascending: false })
       if (this.limitValue) query = query.limit(this.limitValue)
       const { data, error } = await query
       throwIfError(error)
       values = await Promise.all((data || []).map(apostilaFromRow))
     } else if (this.name === 'simulados_info') {
-      let query = client.from('simulados').select('*').order('created_at', { ascending: false })
+      let query = client.from('simulados').select(SIMULADO_COLUMNS).order('created_at', { ascending: false })
       if (this.limitValue) query = query.limit(this.limitValue)
       const { data, error } = await query
       throwIfError(error)
@@ -413,7 +426,7 @@ class DocumentReference {
     const client = requireSupabase()
     if (this.collectionName === 'usuarios') return new DocumentSnapshot(this.id, await profileSnapshot(this.id))
     if (this.collectionName === 'apostilas') {
-      const { data, error } = await client.from('apostilas').select('*').eq('id', this.id).maybeSingle()
+      const { data, error } = await client.from('apostilas').select(APOSTILA_COLUMNS).eq('id', this.id).maybeSingle()
       throwIfError(error)
       return new DocumentSnapshot(this.id, data ? await apostilaFromRow(data) : null)
     }
@@ -466,6 +479,15 @@ class DocumentReference {
   async update(value) {
     const current = await this.get()
     if (!current.exists) throw new Error(`Registro não encontrado: ${this.id}`)
+    if (this.collectionName === 'apostilas') {
+      const row = apostilaToRow({ ...current.data(), ...value })
+      // Public snapshots deliberately omit PDF locations. Metadata edits must preserve them.
+      if (!Object.hasOwn(value, 'pdfUrl') && !Object.hasOwn(value, 'pdf_path')) delete row.pdf_path
+      if (!Object.hasOwn(value, 'previewPdfPath')) delete row.preview_pdf_path
+      const { error } = await requireSupabase().from('apostilas').update(row).eq('id', this.id)
+      throwIfError(error)
+      return
+    }
     return this.set({ ...current.data(), ...value }, { merge: true })
   }
 
@@ -611,6 +633,33 @@ export function installSupabaseFirebaseAdapter() {
     auth,
   }
   window.supabase = supabase
+  window.materiaPayments = {
+    async checkout(tipo, contentId) {
+      const { data, error } = await supabase.functions.invoke('stripe-checkout', { body: { tipo, contentId } })
+      if (error) {
+        const detail = await error.context?.json?.().catch(() => null)
+        throw new Error(detail?.error || 'Não foi possível iniciar o pagamento. Tente novamente.')
+      }
+      window.location.assign(data.url)
+    },
+    async portal() {
+      const { data, error } = await supabase.functions.invoke('stripe-portal', { body: {} })
+      throwIfError(error)
+      window.location.assign(data.url)
+    },
+    async access(tipo, id) {
+      const { data, error } = await supabase.rpc(tipo === 'apostila' ? 'can_access_apostila' : 'can_access_simulado', { content_id: id })
+      throwIfError(error)
+      return data === true
+    },
+    async pdf(id, preview = false) {
+      const { data, error } = await supabase.rpc('get_apostila_pdf', { content_id: id, preview })
+      throwIfError(error)
+      if (!data) throw new Error(preview ? 'A amostra desta apostila ainda não está disponível.' : 'PDF indisponível.')
+      return pdfUrl(data)
+    },
+  }
+  window.materiaContent = { simuladoColumns: SIMULADO_COLUMNS, questions: storedQuestions }
   return true
 }
 

@@ -31,7 +31,8 @@
           <label>Subtítulo</label><input type="text" id="adm-ap-sub" placeholder="Ex.: Teoria e questões comentadas">
           <label>Preço (R$)</label><input type="text" id="adm-ap-preco" placeholder="Ex: 14,99">
           <label>URL da capa</label><input type="text" id="adm-ap-capa" placeholder="https://...">
-          <label>URL do PDF</label><input type="text" id="adm-ap-pdf" placeholder="https://...">
+          <label>Caminho do PDF no bucket privado apostila-pdfs</label><input type="text" id="adm-ap-pdf" placeholder="apostilas/administracao.pdf">
+          <label>Caminho da amostra de até 20 páginas (opcional)</label><input type="text" id="adm-ap-preview" placeholder="amostras/administracao.pdf">
           <label>Descrição</label><textarea id="adm-ap-desc" rows="5" placeholder="Apresente o conteúdo da apostila"></textarea>
           <button class="btn-marrom" onclick="salvarApostila()">Publicar apostila</button><div id="status-ap" class="status-msg"></div>
         </article>
@@ -45,7 +46,7 @@
     <section id="admin-page-simulados" class="admin-page">
       <div class="admin-page-heading"><div><p>Conteúdo</p><h2>Simulados</h2></div><button class="admin-secondary-button" onclick="novoSimulado()">+ Novo simulado</button></div>
       <article class="card-admin">
-        <h3>Dados do simulado</h3><input type="hidden" id="adm-sim-id">
+        <h3>Dados do simulado</h3><label for="adm-sim-preco">Preço avulso (R$)</label><input id="adm-sim-preco" type="text" inputmode="decimal" placeholder="Ex.: 9,99"><small>Sem preço, disponível apenas para Premium.</small><input type="hidden" id="adm-sim-id">
         <label for="adm-sim-tags">Tags (obrigatório)</label><select id="adm-sim-tags" multiple required aria-describedby="adm-sim-tags-ajuda"></select>
         <p id="adm-sim-tags-ajuda" class="card-description">Selecione uma ou mais tags. Cadastre novas opções na aba Tags.</p>
         <div class="admin-form-grid two"><div><label>Título</label><input type="text" id="adm-sim-titulo" placeholder="Ex.: Enfermagem"></div><div><label>Descrição</label><input type="text" id="adm-sim-desc" placeholder="Ex.: Anatomia sistêmica"></div></div>

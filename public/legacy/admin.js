@@ -143,7 +143,7 @@
                 ['adm-ap-sub', 'Subtítulo'],
                 ['adm-ap-preco', 'Preço'],
                 ['adm-ap-capa', 'URL da capa'],
-                ['adm-ap-pdf', 'URL do PDF'],
+                ['adm-ap-pdf', 'Caminho do PDF privado'],
                 ['adm-ap-desc', 'Descrição'],
             ])) return;
             const nova = {
@@ -153,6 +153,7 @@
                 preco: document.getElementById('adm-ap-preco').value.trim(),
                 capaUrl: document.getElementById('adm-ap-capa').value.trim(),
                 pdfUrl: document.getElementById('adm-ap-pdf').value.trim(),
+                previewPdfPath: document.getElementById('adm-ap-preview').value.trim(),
                 descricao: document.getElementById('adm-ap-desc').value.trim(),
                 ano: "2026",
                 ativo: true
@@ -201,6 +202,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
             document.getElementById('adm-sim-capa').value = '';
             document.getElementById('adm-sim-qtd').value = '0';
             document.getElementById('adm-sim-tempo').value = '60';
+            document.getElementById('adm-sim-preco').value = '';
             document.getElementById('adm-sim-status').value = 'rascunho';
             preencherFiltrosQuestoes();
             definirStatus('status-sim');
@@ -227,6 +229,8 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
             const slug = document.getElementById('adm-sim-slug').value.trim() || gerarSlug(titulo);
             if (!titulo || !slug) return mostrarToast('warning', 'Informe o título do simulado.', { title: 'Título obrigatório' });
 
+            const preco = Number(document.getElementById('adm-sim-preco').value.replace(',', '.'));
+            if (!Number.isFinite(preco) || preco < 0) return mostrarToast('warning', 'Informe um preço válido.');
             const filtros = {};
             camposTaxonomia.forEach(campo => {
                 const valor = document.getElementById(`filtro-col-${campo}`).value;
@@ -238,6 +242,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
                 slug,
                 descricao: document.getElementById('adm-sim-desc').value.trim(),
                 imagem_path: document.getElementById('adm-sim-capa').value.trim(),
+                preco_centavos: Math.round(Number(document.getElementById('adm-sim-preco').value.replace(',', '.')) * 100),
                 duracao_minutos: Number(document.getElementById('adm-sim-tempo').value) || 60,
                 status: document.getElementById('adm-sim-status').value,
                 configuracao: { filtros },
@@ -257,8 +262,9 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
         }
 
         async function editarSimuladoNaCaixa(id) {
-            const { data, error } = await window.supabase.from('simulados').select('*').eq('id', id).single();
+            const { data, error } = await window.supabase.from('simulados').select(window.materiaContent.simuladoColumns).eq('id', id).single();
             if (error) return mostrarToast('error', error.message, { title: 'Erro ao carregar simulado' });
+            data.questoes = await window.materiaContent.questions(data.id);
             await carregarTagsFormularioAdmin('simulado', data.tags || []);
             document.getElementById('adm-sim-id').value = data.id;
             document.getElementById('adm-sim-titulo').value = data.titulo;
@@ -267,6 +273,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
             document.getElementById('adm-sim-capa').value = data.imagem_path || '';
             document.getElementById('adm-sim-qtd').value = (data.questoes || []).length;
             document.getElementById('adm-sim-tempo').value = data.duracao_minutos || 60;
+            document.getElementById('adm-sim-preco').value = ((data.preco_centavos || 0) / 100).toFixed(2).replace('.', ',');
             document.getElementById('adm-sim-status').value = data.status || 'rascunho';
             preencherFiltrosQuestoes(data.questoes || [], data.configuracao?.filtros || {});
             document.getElementById('adm-csv-simid').value = data.id;
@@ -307,7 +314,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
 
             // 2. Simulados são uma única tabela; as questões ficam no JSONB `questoes`.
             const { data: simulados, error: erroSimulados } = await window.supabase
-                .from('simulados').select('id,slug,titulo,descricao,status,questoes,configuracao').order('created_at', { ascending: false });
+                .from('simulados').select('id,slug,titulo,descricao,status,quantidade_questoes,configuracao').order('created_at', { ascending: false });
             if (erroSimulados) {
                 divSim.innerHTML = `<p style="color:#C9302C;">${erroSimulados.message}</p>`;
             } else if (!simulados.length) {
@@ -322,7 +329,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
                         <div>
                             <span style="font-size:10px; background:#EBEBEB; padding:2px 6px; border-radius:4px; font-weight:700;">/${simulado.slug}</span><br>
                             <strong style="font-size:15px;">${simulado.titulo}</strong>${simulado.descricao ? ` <span style="color:#555;">— ${simulado.descricao}</span>` : ''}<br>
-                            <span style="font-size:11px; color:#555;">${(simulado.questoes || []).length} questões</span>${filtrosAtivos ? ` · <span style="font-size:11px;">${filtrosAtivos}</span>` : ''}<br>
+                            <span style="font-size:11px; color:#555;">${simulado.quantidade_questoes || 0} questões</span>${filtrosAtivos ? ` · <span style="font-size:11px;">${filtrosAtivos}</span>` : ''}<br>
                             <span style="font-size:11px; color:${publicado ? '#2E6F40' : '#C98219'}; font-weight:700;">${publicado ? '● Publicado' : `○ ${simulado.status}`}</span>
                         </div>
                         <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
@@ -337,7 +344,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
             if (csvSelect) {
                 const atual = csvSelect.value;
                 csvSelect.innerHTML = '<option value="">Selecione...</option>' + (simulados || [])
-                    .map(simulado => `<option value="${simulado.id}">${simulado.titulo} (${(simulado.questoes || []).length})</option>`).join('');
+                    .map(simulado => `<option value="${simulado.id}">${simulado.titulo} (${simulado.quantidade_questoes || 0})</option>`).join('');
                 if ([...(simulados || [])].some(simulado => simulado.id === atual)) csvSelect.value = atual;
             }
         }
@@ -537,8 +544,9 @@ function alternarCamposTipoCupomAdmin() {
             if (!input.files.length || !simId) return mostrarToast('warning', 'Selecione um simulado e um arquivo CSV.', { title: 'Importação incompleta' });
 
             const { data: simulado, error: loadError } = await window.supabase
-                .from('simulados').select('id,titulo,questoes').eq('id', simId).single();
+                .from('simulados').select('id,titulo').eq('id', simId).single();
             if (loadError) return mostrarToast('error', loadError.message, { title: 'Erro ao carregar simulado' });
+            simulado.questoes = await window.materiaContent.questions(simulado.id);
             status.innerText = 'Lendo e validando a planilha...';
 
             Papa.parse(input.files[0], {

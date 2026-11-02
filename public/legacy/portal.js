@@ -53,7 +53,8 @@
                         tipoUsuario: dados.tipoUsuario || 'aluno',
                         isPremium: dados.isPremium || false,
                         planoAssinado: dados.planoAssinado || null,
-                        bibliotecaIds: dados.bibliotecaIds || ["admin-default"],
+                        bibliotecaIds: dados.bibliotecaIds || [],
+                        simuladosComprados: dados.simuladosComprados || [],
                         simuladosAdicionados: dados.simuladosAdicionados || [],
                         progressoPaginas: dados.progressoPaginas || {},
                         cupons: dados.cupons || cuponsIniciaisPadrao
@@ -241,6 +242,7 @@
                 const primeiroNome = user.displayName ? user.displayName.split(' ')[0].toUpperCase() : 'VISITANTE';
                 usuarioAtual = { uid: user.uid, nome: primeiroNome, email: user.email || "" };
                 await carregarOuCriarPerfilFirestore(user);
+                verificarRetornoPagamento();
 
                 if (acaoPendentePosLogin) {
                     const acao = acaoPendentePosLogin;
@@ -392,14 +394,7 @@ let aguardandoEscolherApostilaParaCupom = false;
             document.getElementById('popover-cupons').classList.remove('active');
 
             if (cupom.tipo === 'premium') {
-                cupom.usado = true;
-                await atualizarDadosUsuarioNoFirestore({ cupons: lista, isPremium: true });
-                atualizarEstadoCabecalho();
-                // Se estiver com uma apostila aberta, já some o preço 14,99 na hora
-                if (verificarSeEstaNaPaginaDetalheApostila()) {
-                    abrirDetalheApostilaPorId(apostilaSelecionada.id, false);
-                }
-                mostrarToast('success', 'Seu período Premium foi ativado. Todas as apostilas estão liberadas.', { title: 'Cupom utilizado' });
+                mostrarToast('info', 'Este benefício precisa ser validado pelo servidor. Assine o Premium para liberar todos os conteúdos.');
             } else {
                 // Cupom de Apostila Grátis
                 idCupomPendenteParaApostila = idCupom;
@@ -425,27 +420,7 @@ let aguardandoEscolherApostilaParaCupom = false;
 
         async function confirmarResgateCupomNaApostila() {
             fecharModal('modal-confirm-cupom-apostila');
-            exigirLoginPrimeiro(async () => {
-                const listaCupons = [...(perfilFirestore.cupons || [])];
-                let cupomAlvo = listaCupons.find(c => c.id === idCupomPendenteParaApostila && !c.usado);
-                if (!cupomAlvo) {
-                    cupomAlvo = listaCupons.find(c => c.tipo === 'apostila' && !c.usado);
-                }
-
-                if (!cupomAlvo) {
-                    mostrarToast('warning', 'Você não possui um cupom de apostila disponível no momento.', { title: 'Cupom indisponível' });
-                    return;
-                }
-
-                cupomAlvo.usado = true;
-                const novaBib = Array.from(new Set([...(perfilFirestore.bibliotecaIds || []), apostilaSelecionada.id]));
-                await atualizarDadosUsuarioNoFirestore({ cupons: listaCupons, bibliotecaIds: novaBib });
-
-                cancelarModoEscolhaCupom();
-                renderizarMeusCupons();
-                abrirDetalheApostilaPorId(apostilaSelecionada.id, true);
-                mostrarToast('success', `A apostila “${apostilaSelecionada.titulo}” foi desbloqueada e adicionada à sua Biblioteca.`, { title: 'Cupom utilizado' });
-            });
+            mostrarToast('info', 'Este cupom precisa ser validado pelo servidor antes de liberar o acesso.');
         }
 
         /* =========================================================
@@ -543,8 +518,8 @@ let aguardandoEscolherApostilaParaCupom = false;
 
         function renderizarBibliotecaAluno() {
             const gridBib = document.getElementById('grid-biblioteca-aluno');
-            const idsAdquiridos = perfilFirestore.bibliotecaIds || ["admin-default"];
-            const listaBib = catalogoApostilas.filter(ap => idsAdquiridos.includes(ap.id));
+            const idsAdquiridos = perfilFirestore.bibliotecaIds || [];
+            const listaBib = catalogoApostilas.filter(ap => perfilFirestore.isPremium || ['admin', 'super_admin'].includes(perfilFirestore.tipoUsuario) || idsAdquiridos.includes(ap.id));
 
             if (listaBib.length === 0) {
                 gridBib.innerHTML = `<p style="grid-column: 1/-1; text-align:center;">Você ainda não possui apostilas na sua biblioteca.</p>`;
@@ -575,7 +550,7 @@ let aguardandoEscolherApostilaParaCupom = false;
             document.getElementById('detalhe-ano-card').innerText = apostilaSelecionada.ano || '2026';
 
             const jaNaBiblioteca = (perfilFirestore.bibliotecaIds || []).includes(apostilaSelecionada.id);
-            const temAcessoLiberado = isVindoDaBiblioteca || perfilFirestore.isPremium === true || jaNaBiblioteca;
+            const temAcessoLiberado = ['admin', 'super_admin'].includes(perfilFirestore.tipoUsuario) || perfilFirestore.isPremium === true || jaNaBiblioteca;
 
             const spanPreco = document.getElementById('detalhe-preco-card');
             const btnCupom = document.getElementById('btn-tenho-cupom-apostila');
@@ -645,28 +620,43 @@ let aguardandoEscolherApostilaParaCupom = false;
 
         function abrirCheckoutPagamento(nomeItem, valorItem, tipoItem) {
             fecharModal('modal-premium');
-            checkoutAtual = { nome: nomeItem, valor: valorItem, tipo: tipoItem };
+            checkoutAtual = { nome: nomeItem, valor: valorItem, tipo: tipoItem, contentId: tipoItem === 'apostila' ? apostilaSelecionada.id : tipoItem === 'simulado' ? simuladoAtivoMetadata.uuid : null };
             document.getElementById('item-checkout-nome').innerText = nomeItem;
             document.getElementById('item-checkout-valor').innerText = `R$ ${valorItem}`;
             abrirModal('modal-pagamento');
         }
 
+        let pagamentoEmAndamento = false;
         async function concluirPagamentoCheckout() {
-            fecharModal('modal-pagamento');
-            if (checkoutAtual.tipo === 'premium') {
-                await atualizarDadosUsuarioNoFirestore({ isPremium: true });
-                atualizarEstadoCabecalho();
-                if (verificarSeEstaNaPaginaDetalheApostila() && apostilaSelecionada) {
-                    abrirDetalheApostilaPorId(apostilaSelecionada.id, false);
-                }
-                mostrarToast('success', 'Sua assinatura Premium foi confirmada e salva na nuvem.', { title: 'Assinatura realizada' });
-            } else {
-                const novaBib = Array.from(new Set([...(perfilFirestore.bibliotecaIds || []), apostilaSelecionada.id]));
-                await atualizarDadosUsuarioNoFirestore({ bibliotecaIds: novaBib });
-                mostrarToast('success', `A apostila “${apostilaSelecionada.titulo}” foi adicionada à sua Biblioteca.`, { title: 'Compra confirmada' });
-                abrirDetalheApostilaPorId(apostilaSelecionada.id, true);
-                iniciarLeituraPDF(false);
+            if (pagamentoEmAndamento) return;
+            exigirLoginPrimeiro(async () => {
+                pagamentoEmAndamento = true;
+                try { await window.materiaPayments.checkout(checkoutAtual.tipo, checkoutAtual.contentId); }
+                catch (error) { mostrarToast('error', error.message, { title: 'Pagamento não iniciado' }); }
+                finally { pagamentoEmAndamento = false; }
+            });
+        }
+        function gerenciarAssinatura() {
+            exigirLoginPrimeiro(async () => {
+                try { await window.materiaPayments.portal(); }
+                catch (error) { mostrarToast('error', error.message, { title: 'Assinatura' }); }
+            });
+        }
+        async function verificarRetornoPagamento() {
+            const params = new URLSearchParams(window.location.search);
+            const status = params.get('checkout');
+            if (!status || !usuarioAtual) return;
+            params.delete('checkout'); params.delete('session_id');
+            window.history.replaceState(null, '', window.location.pathname + (params.size ? '?' + params : '') + window.location.hash);
+            if (status === 'canceled') return mostrarToast('info', 'Pagamento cancelado. Nenhuma compra foi confirmada.');
+            mostrarToast('info', 'Aguardando a confirmação do pagamento pelo Stripe.');
+            for (let i = 0; i < 8; i++) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                if (!usuarioAtual) return;
+                await carregarOuCriarPerfilFirestore({ uid: usuarioAtual.uid, displayName: usuarioAtual.nome, email: usuarioAtual.email });
             }
+            await carregarApostilasDoFirebase();
+            mostrarToast('info', 'Permissões atualizadas. Se o pagamento estiver pendente, atualize a página em alguns instantes.');
         }
         /* MOTOR DO LEITOR DE PDF (COM PROGRESSO DE PÁGINA NO FIRESTORE) */
         let pdfDoc = null, pageNum = 1;
@@ -694,11 +684,9 @@ let aguardandoEscolherApostilaParaCupom = false;
             const hashLeitor = await gerarHashApostila(idAtual);
             window.history.replaceState(window.history.state, '', window.portalRouteUrl(`/apostila#leitor/${hashLeitor}`));
 
-            if (!apenasTeste20Paginas && !(perfilFirestore.bibliotecaIds || []).includes(idAtual)) {
-                const novaBib = [...(perfilFirestore.bibliotecaIds || []), idAtual];
-                await atualizarDadosUsuarioNoFirestore({ bibliotecaIds: novaBib });
-                renderizarBibliotecaAluno();
-            }
+            let arquivoAutorizado;
+            try { arquivoAutorizado = await window.materiaPayments.pdf(idAtual, apenasTeste20Paginas); }
+            catch (error) { mostrarToast('warning', error.message, { title: 'Acesso à apostila' }); return; }
 
             modoAmostraGratis = apenasTeste20Paginas;
             document.getElementById('aviso-modo-teste').style.display = modoAmostraGratis ? 'inline-block' : 'none';
@@ -709,7 +697,7 @@ let aguardandoEscolherApostilaParaCupom = false;
             document.querySelectorAll('.subview-apostila').forEach(v => v.classList.remove('active'));
             document.getElementById('sub-leitor').classList.add('active');
 
-            const arquivoPDFOriginal = apostilaSelecionada.pdfUrl || 'apostilaadministração.pdf';
+            const arquivoPDFOriginal = arquivoAutorizado;
             let arquivoPDF = arquivoPDFOriginal;
             try {
                 const urlPDF = new URL(arquivoPDFOriginal, window.location.href);
@@ -971,6 +959,12 @@ let aguardandoEscolherApostilaParaCupom = false;
                     simuladoAtivoMetadata = { questoes_banca: 20, tempo_banca: 60 };
                 }
 
+                try {
+                    if (!simuladoAtivoMetadata.uuid || !await window.materiaPayments.access('simulado', simuladoAtivoMetadata.uuid)) {
+                        abrirCheckoutPagamento(simuladoAtivoNome, simuladoAtivoMetadata.preco || '0,00', 'simulado');
+                        return;
+                    }
+                } catch (error) { mostrarToast('error', error.message, { title: 'Acesso ao simulado' }); return; }
                 document.getElementById('txt-banca-questoes').innerHTML = `<strong>${simuladoAtivoMetadata.questoes_banca || 20} Questões</strong> aleatórias`;
                 document.getElementById('txt-banca-tempo').innerHTML = `Tempo de <strong>${simuladoAtivoMetadata.tempo_banca || 60} min</strong>`;
 

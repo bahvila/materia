@@ -22,8 +22,8 @@ const report = await page.evaluate(async () => {
   if (!window.supabase) return { configured: false, tables: [] }
   const tables = [
     ['plans', 'id'],
-    ['apostilas', 'id,capa_path,pdf_path'],
-    ['simulados', 'id,questoes'],
+    ['apostilas', 'id,capa_path'],
+    ['simulados', 'id,quantidade_questoes,preco_centavos'],
     ['profiles', 'id,metadata'],
     ['subscriptions', 'id'],
     ['attempts', 'id,respostas'],
