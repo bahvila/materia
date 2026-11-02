@@ -1059,3 +1059,38 @@ header { gap: 18px; }
     .catalog-grid .card-apostila img { height: 190px; }
     .catalog-grid .card-apostila h3 { font-size: 14px; }
 }
+
+/* Simulados use horizontal banners instead of the apostila cover grid. */
+.container:has(#simulados.active .catalog-layout) { padding: 0; }
+#simulados .catalog-layout { grid-template-columns: 233px minmax(0, 1fr); gap: 0; }
+#simulados .catalog-sidebar { align-self: stretch; padding: 36px 7px 24px 46px; border-right: 1px solid #a69890; background: white; }
+#simulados .catalog-tags { position: sticky; top: 100px; max-height: calc(100dvh - 110px); gap: 10px; padding-right: 46px; }
+#simulados .catalog-tag { min-height: 30px; padding: 6px 10px; border-radius: 9px; font-size: 12px; }
+#simulados .catalog-main { padding: 30px  min(10vw, 138px) 32px 17px; }
+#simulados .catalog-toolbar { justify-content: center; gap: 12px; margin-bottom: 36px; }
+#simulados .catalog-search { width: min(100%, 433px); height: 38px; font-size: 11px; }
+#simulados .catalog-actions { width: 100%; justify-content: flex-end; margin: 0; }
+#simulados .catalog-actions button { min-height: 30px; padding: 4px 10px; font-size: 12px; }
+#simulados .catalog-grid { grid-template-columns: minmax(0, 1fr); gap: 21px; }
+.catalog-card-simulado { position: relative; display: flex; align-items: flex-start; width: 100%; min-height: 118px; overflow: hidden; padding: 14px 23px; border: 0; border-radius: 15px; background: linear-gradient(90deg, #604b42 36%, #fff 87%); color: white; text-align: left; cursor: pointer; }
+.catalog-card-simulado .info { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 3px; width: calc(100% - 140px); overflow-wrap: anywhere; }
+.catalog-card-simulado strong { font-size: 28px; line-height: 1.2; font-weight: 800; }
+.catalog-card-simulado .info > span, .catalog-card-simulado p { margin: 0; font-size: 20px; line-height: 1.3; font-weight: 400; }
+.catalog-card-simulado img { position: absolute; top: 0; right: 0; width: 140px; height: 100%; object-fit: contain; object-position: right center; }
+.catalog-card-simulado:hover { box-shadow: 0 4px 12px #604b4226; }
+.catalog-card-simulado:focus-visible { outline: 3px solid var(--dourado); outline-offset: 3px; }
+#simulados .catalog-saved-item .catalog-card-simulado { min-height: 150px; padding-right: 42px; }
+#simulados .catalog-saved-item .link-materiais-yellow { color: #ffe0a0; margin-top: 8px; }
+@media (max-width: 700px) {
+    #simulados .catalog-layout { grid-template-columns: 130px minmax(0, 1fr); }
+    #simulados .catalog-sidebar { padding: 24px 8px 20px 12px; }
+    #simulados .catalog-tags { padding-right: 8px; }
+    #simulados .catalog-main { padding: 24px 14px; }
+    #simulados .catalog-toolbar { margin-bottom: 24px; }
+    #simulados .catalog-actions { flex-wrap: wrap; }
+    .catalog-card-simulado { padding: 16px 12px; }
+    .catalog-card-simulado .info { width: calc(100% - 65px); }
+    .catalog-card-simulado strong { font-size: 19px; }
+    .catalog-card-simulado .info > span, .catalog-card-simulado p { font-size: 14px; }
+    .catalog-card-simulado img { width: 70px; }
+}

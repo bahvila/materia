@@ -855,11 +855,12 @@ let aguardandoEscolherApostilaParaCupom = false;
                 const imagemExibir = sim.capaUrl ? sim.capaUrl : `capasimulado${info.areaLimpa}.png`;
 
                 return `
-                <div class="card-apostila catalog-card-simulado" onclick="pedirAdicionarSimulado('${sim.nome}', '${sim.id}')" style="margin-bottom: 15px;">
-                    <img src="${imagemExibir}" alt="${info.area}" onerror="this.style.visibility='hidden'">
-                    <h3>${info.area}</h3><p>${info.assunto}</p>
-                </div>`;
+                <button type="button" class="catalog-card-simulado" onclick="pedirAdicionarSimulado('${sim.nome}', '${sim.id}')">
+                    <span class="info"><strong>${info.area}</strong><span>${info.assunto}</span></span>
+                    <img src="${imagemExibir}" alt="" onerror="this.style.visibility='hidden'">
+                </button>`;
             }).join('');
+            if (!filtrados.length) container.innerHTML = '<p class="catalog-empty">Nenhum simulado encontrado para esta busca.</p>';
         }
 
         function pedirAdicionarSimulado(nome, id) {
@@ -908,10 +909,10 @@ let aguardandoEscolherApostilaParaCupom = false;
 
                 return `
                 <div class="catalog-saved-item">
-                    <div class="card-apostila" onclick="fluxoClicarSimuladoParaConfigurar('${sim.nome}', '${sim.id}')" style="margin-bottom: 0;">
+                    <div class="catalog-card-simulado" role="button" tabindex="0" onkeydown="if(event.target === this && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); this.click(); }" onclick="fluxoClicarSimuladoParaConfigurar('${sim.nome}', '${sim.id}')">
                         <img src="${imagemExibir}" alt="${sim.area}" onerror="this.style.visibility='hidden'">
                         <div class="info">
-                            <h3>${sim.area}</h3>
+                            <strong>${sim.area}</strong>
                             <p>${sim.assunto}</p>
                             <div class="link-materiais-yellow" onclick="event.stopPropagation(); mudarSeparador('apostila'); abrirDetalheApostilaPorId('admin-default', false);">
                                 Materiais recomendados ↗
