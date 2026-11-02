@@ -5,11 +5,10 @@ import { callLegacy } from '../../legacy/legacyBridge'
 
 const freeBenefits = [
   [true, 'Simulados gabaritados'],
-  [true, '1 simulado por mês'],
+  [true, 'Compra avulsa de apostilas e simulados'],
   [false, 'Simulados personalizados'],
   [false, 'Questões comentadas'],
   [false, 'Acesso completo a todos os materiais da plataforma'],
-  [false, '1 Cupom de 100% off para apostila após cada renovação'],
 ]
 
 const premiumBenefits = [
@@ -18,7 +17,6 @@ const premiumBenefits = [
   [true, 'Simulados personalizados'],
   [true, 'Questões comentadas'],
   [true, 'Acesso completo a todos os materiais da plataforma'],
-  [true, '1 Cupom de 100% off para apostila após cada renovação'],
 ]
 
 function BenefitList({ title, benefits, premium = false }) {
@@ -48,6 +46,7 @@ export function PremiumModal() {
           <img className="premium-marca-imagem" src={sitePath('/assets/íconemateriapremium.png')} alt="Matéria Premium" />
           <div className="preco-gigante">R$ 24,<small>99</small></div>
           <LegacyButton className="btn-dourado-assinar" onLegacyClick="abrirCheckoutPagamento" legacyArgs={['Assinatura Matéria Premium', '24,99', 'premium']}>ASSINE AGORA</LegacyButton>
+          <LegacyButton className="btn-header-entrar" onLegacyClick="gerenciarAssinatura">Gerenciar assinatura</LegacyButton>
         </div>
       </div>
     </div>
@@ -122,13 +121,9 @@ export function PaymentModal() {
           <span id="item-checkout-nome">Apostila de Administração</span>
           <span id="item-checkout-valor">R$ 14,99</span>
         </div>
-        <label className="checkout-label" htmlFor="forma-pagamento">Forma de Pagamento:</label>
-        <select id="forma-pagamento" className="checkout-select">
-          <option>PIX (Liberação Imediata)</option>
-          <option>Cartão de Crédito</option>
-        </select>
+        <p>Você será direcionado ao Stripe para pagar com cartão. O acesso será liberado após a confirmação do pagamento.</p>
       </div>
-      <LegacyButton className="btn-dourado-assinar modal-full-action" onLegacyClick="concluirPagamentoCheckout">Confirmar Pagamento</LegacyButton>
+      <LegacyButton className="btn-dourado-assinar modal-full-action" onLegacyClick="concluirPagamentoCheckout">Continuar para o Stripe</LegacyButton>
     </div>
   )
 }
