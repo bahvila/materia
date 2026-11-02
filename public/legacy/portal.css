@@ -1061,11 +1061,12 @@ header { gap: 18px; }
 }
 
 /* Simulados use horizontal banners instead of the apostila cover grid. */
-.container:has(#simulados.active .catalog-layout) { padding: 0; }
-#simulados .catalog-layout { grid-template-columns: 233px minmax(0, 1fr); gap: 0; }
-#simulados .catalog-sidebar { align-self: stretch; padding: 36px 7px 24px 46px; border-right: 1px solid #a69890; background: white; }
+.container:has(#simulados.active #sim-view-lobby.active),
+.container:has(#simulados.active #sim-view-catalogo.active) { padding: 0; }
+#simulados .catalog-layout { grid-template-columns: 233px minmax(0, 1fr); gap: 0; min-height: calc(100dvh - 80px); }
+#simulados .catalog-sidebar { align-self: stretch; padding: 36px 7px 24px 24px; border-right: 1px solid #a69890; background: transparent; }
 #simulados .catalog-tags { position: sticky; top: 100px; max-height: calc(100dvh - 110px); gap: 10px; padding-right: 46px; }
-#simulados .catalog-tag { min-height: 30px; padding: 6px 10px; border-radius: 9px; font-size: 12px; }
+#simulados .catalog-tag { min-height: 42px; padding: 8px 12px; border-radius: 10px; font-size: 13px; }
 #simulados .catalog-main { padding: 30px  min(10vw, 138px) 32px 17px; }
 #simulados .catalog-toolbar { justify-content: center; gap: 12px; margin-bottom: 36px; }
 #simulados .catalog-search { width: min(100%, 433px); height: 38px; font-size: 11px; }
