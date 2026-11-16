@@ -13,37 +13,13 @@
   </header>
 
   <nav class="admin-navigation" aria-label="Seções administrativas">
-    <button class="admin-nav-button active" data-admin-section="apostilas" onclick="navegarAdmin('apostilas')">Apostilas</button>
-    <button class="admin-nav-button" data-admin-section="simulados" onclick="navegarAdmin('simulados')">Simulados</button>
+    <button class="admin-nav-button active" data-admin-section="simulados" onclick="navegarAdmin('simulados')">Simulados</button>
     <button class="admin-nav-button" data-admin-section="cupons" onclick="navegarAdmin('cupons')">Cupons</button>
     <button class="admin-nav-button" data-admin-section="tags" onclick="navegarAdmin('tags')">Tags</button>
   </nav>
 
   <main>
-    <section id="admin-page-apostilas" class="admin-page active">
-      <div class="admin-page-heading"><div><p>Conteúdo</p><h2>Apostilas</h2></div></div>
-      <div class="admin-two-columns">
-        <article class="card-admin">
-          <h3>Nova apostila</h3>
-          <label for="adm-ap-tags">Tags (obrigatório)</label><select id="adm-ap-tags" multiple required aria-describedby="adm-ap-tags-ajuda"></select>
-          <p id="adm-ap-tags-ajuda" class="card-description">Selecione uma ou mais tags. Cadastre novas opções na aba Tags.</p>
-          <label>Título</label><input type="text" id="adm-ap-titulo" placeholder="Ex.: Direito Constitucional">
-          <label>Subtítulo</label><input type="text" id="adm-ap-sub" placeholder="Ex.: Teoria e questões comentadas">
-          <label>Preço (R$)</label><input type="text" id="adm-ap-preco" placeholder="Ex: 14,99">
-          <label>URL da capa</label><input type="text" id="adm-ap-capa" placeholder="https://...">
-          <label>Caminho do PDF no bucket privado apostila-pdfs</label><input type="text" id="adm-ap-pdf" placeholder="apostilas/administracao.pdf">
-          <label>Caminho da amostra de até 20 páginas (opcional)</label><input type="text" id="adm-ap-preview" placeholder="amostras/administracao.pdf">
-          <label>Descrição</label><textarea id="adm-ap-desc" rows="5" placeholder="Apresente o conteúdo da apostila"></textarea>
-          <button class="btn-marrom" onclick="salvarApostila()">Publicar apostila</button><div id="status-ap" class="status-msg"></div>
-        </article>
-        <article class="card-admin admin-list-card">
-          <div class="card-heading-row"><div><p>Catálogo</p><h3>Apostilas cadastradas</h3></div><button class="admin-icon-button" onclick="carregarListasAdmin()">Atualizar</button></div>
-          <div id="lista-admin-apostilas" class="admin-record-list">Carregando...</div>
-        </article>
-      </div>
-    </section>
-
-    <section id="admin-page-simulados" class="admin-page">
+<section id="admin-page-simulados" class="admin-page active">
       <div class="admin-page-heading"><div><p>Conteúdo</p><h2>Simulados</h2></div><button class="admin-secondary-button" onclick="novoSimulado()">+ Novo simulado</button></div>
       <article class="card-admin">
         <h3>Dados do simulado</h3><label for="adm-sim-preco">Preço avulso (R$)</label><input id="adm-sim-preco" type="text" inputmode="decimal" placeholder="Ex.: 9,99"><small>Sem preço, disponível apenas para Premium.</small><input type="hidden" id="adm-sim-id">
@@ -72,7 +48,7 @@
       <div class="admin-page-heading"><div><p>Benefícios</p><h2>Cupons</h2></div></div>
       <div class="admin-two-columns">
         <article class="card-admin"><h3>Novo cupom</h3><div class="admin-form-grid two">
-          <div><label>Código</label><input type="text" id="adm-cupom-codigo" maxlength="10" placeholder="Ex.: ANAC50" oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()"></div><div><label>Benefício</label><select id="adm-cupom-tipo" onchange="alternarCamposTipoCupomAdmin()"><option value="premium">Desbloquear Premium</option><option value="apostila">Desconto em apostila</option></select></div>
+          <div><label>Código</label><input type="text" id="adm-cupom-codigo" maxlength="10" placeholder="Ex.: ANAC50" oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()"></div><div><label>Benefício</label><select id="adm-cupom-tipo" onchange="alternarCamposTipoCupomAdmin()"><option value="premium">Desbloquear Premium</option></select></div>
           <div><label>Limite de usuários</label><input type="number" id="adm-cupom-limite" min="1" placeholder="Ilimitado"></div><div><label>Expira após (dias)</label><input type="number" id="adm-cupom-cron1" min="1" placeholder="Sem prazo"></div>
           <div id="box-adm-cupom-cron2"><label>Dias de Premium</label><input type="number" id="adm-cupom-cron2" min="1" placeholder="Permanente"></div><div id="box-adm-cupom-porcentagem" style="display:none"><label>Desconto (%)</label><input type="number" id="adm-cupom-desconto" min="1" max="100" value="100"></div>
         </div><button class="btn-marrom" onclick="salvarCupomAdmin()">Criar cupom</button><div id="status-cupom-admin" class="status-msg"></div></article>
@@ -85,7 +61,7 @@
         <article class="card-admin">
           <h3>Criar tag</h3>
           <form onsubmit="event.preventDefault(); criarTagAdmin()">
-            <label for="adm-tag-tipo">Tipo de conteúdo</label><select id="adm-tag-tipo" onchange="carregarTagsAdmin()"><option value="apostila">Apostila</option><option value="simulado">Simulado</option></select>
+            <label for="adm-tag-tipo">Tipo de conteúdo</label><select id="adm-tag-tipo" onchange="carregarTagsAdmin()"><option value="simulado">Simulado</option></select>
             <label for="adm-tag-nome">Nome da tag</label><input id="adm-tag-nome" maxlength="80" required placeholder="Ex.: Direito Constitucional">
             <button class="btn-marrom" id="adm-tag-criar" type="submit">Criar tag</button>
           </form>

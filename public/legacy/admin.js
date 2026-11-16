@@ -2,7 +2,7 @@
         firebase.initializeApp({ provider: "supabase" });
         const db = firebase.firestore();
         const auth = firebase.auth();
-        const adminSections = ['apostilas', 'simulados', 'cupons', 'tags'];
+        const adminSections = ['simulados', 'cupons', 'tags'];
         let tagsAdmin = [];
         let conteudosTagsAdmin = [];
         let carregamentoTagsAdmin = 0;
@@ -49,20 +49,19 @@
 
         function secaoAdminAtual() {
             try {
-                const parentMatch = (window.parent.portalCurrentRoute?.() || window.parent.location.pathname).match(/^\/administrador\/(apostilas|simulados|cupons|tags)/);
+                const parentMatch = (window.parent.portalCurrentRoute?.() || window.parent.location.pathname).match(/^\/administrador\/(simulados|cupons|tags)/);
                 if (parentMatch) return parentMatch[1];
             } catch (_) { /* iframe isolado: usa a query local */ }
             const querySection = new URLSearchParams((window.portalCurrentRoute?.() || window.location.search).split('?').pop()).get('section');
-            return adminSections.includes(querySection) ? querySection : 'apostilas';
+            return adminSections.includes(querySection) ? querySection : 'simulados';
         }
 
         function navegarAdmin(section, updateAddress = true) {
-            const target = adminSections.includes(section) ? section : 'apostilas';
+            const target = adminSections.includes(section) ? section : 'simulados';
             document.querySelectorAll('.admin-page').forEach(page => page.classList.remove('active'));
             document.querySelectorAll('.admin-nav-button').forEach(button => button.classList.toggle('active', button.dataset.adminSection === target));
             document.getElementById(`admin-page-${target}`)?.classList.add('active');
             if (target === 'tags') carregarTagsAdmin();
-            if (target === 'apostilas') carregarTagsFormularioAdmin('apostila');
             if (target === 'simulados') carregarTagsFormularioAdmin('simulado');
             if (updateAddress && window.parent === window) {
                 window.history.pushState({}, '', window.portalRouteUrl(`/admin?section=${target}`));
@@ -128,50 +127,12 @@
                 carregarListasAdmin();
                 carregarCuponsNoAdmin();
                 carregarTagsAdmin();
-                carregarTagsFormularioAdmin('apostila');
                 carregarTagsFormularioAdmin('simulado');
             } else {
                 boxLogin.style.display = 'flex';
                 boxLogado.style.display = 'none';
             }
         });
-
-        async function salvarApostila() {
-            if (!validarCamposObrigatorios([
-                ['adm-ap-tags', 'Tag da apostila'],
-                ['adm-ap-titulo', 'Título da apostila'],
-                ['adm-ap-sub', 'Subtítulo'],
-                ['adm-ap-preco', 'Preço'],
-                ['adm-ap-capa', 'URL da capa'],
-                ['adm-ap-pdf', 'Caminho do PDF privado'],
-                ['adm-ap-desc', 'Descrição'],
-            ])) return;
-            const nova = {
-                tags: [...document.getElementById('adm-ap-tags').selectedOptions].map(option => option.value),
-                titulo: document.getElementById('adm-ap-titulo').value.trim(),
-                subtitulo: document.getElementById('adm-ap-sub').value.trim(),
-                preco: document.getElementById('adm-ap-preco').value.trim(),
-                capaUrl: document.getElementById('adm-ap-capa').value.trim(),
-                pdfUrl: document.getElementById('adm-ap-pdf').value.trim(),
-                previewPdfPath: document.getElementById('adm-ap-preview').value.trim(),
-                descricao: document.getElementById('adm-ap-desc').value.trim(),
-                ano: "2026",
-                ativo: true
-            };
-            if (!nova.titulo) { mostrarToast('warning', 'Preencha o título da apostila.', { title: 'Título obrigatório' }); return; }
-
-            try {
-                await db.collection("apostilas").add(nova);
-                definirStatus('status-ap', 'Apostila publicada com sucesso.');
-                mostrarToast('success', `A apostila “${nova.titulo}” foi criada e publicada.`, { title: 'Apostila criada' });
-                await carregarListasAdmin();
-                sincronizarPortal('apostilas');
-            } catch (e) {
-                mostrarToast('error', e.message || 'Não foi possível salvar a apostila.', { title: 'Erro ao criar apostila' });
-            }
-        }
-
-const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitulo', 'modulo', 'bloco'];
 
         function gerarSlug(texto) {
             return String(texto || '')
@@ -281,36 +242,7 @@ const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitul
         }
 
         async function carregarListasAdmin() {
-            const divAp = document.getElementById('lista-admin-apostilas');
             const divSim = document.getElementById('lista-admin-simulados');
-
-            // 1. Listar Apostilas
-            const snapAp = await db.collection("apostilas").get();
-            if (snapAp.empty) {
-                divAp.innerHTML = "<p style='color:#777;'>Nenhuma apostila cadastrada.</p>";
-            } else {
-                divAp.innerHTML = snapAp.docs.map(doc => {
-                    const d = doc.data();
-                    const visivel = d.ativo !== false;
-                    return `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px; background:${visivel ? '#fff' : '#f5f5f5'};">
-                        <div>
-                            <strong>${d.titulo}</strong><br>
-                            <span style="font-size:11px; color:${visivel ? '#2E6F40' : '#C9302C'}; font-weight:700;">
-                                ${visivel ? '● Visível no Site' : '○ Oculto no Site'}
-                            </span>
-                        </div>
-                        <div style="display:flex; gap:6px;">
-                            <button onclick="alternarVisibilidade('apostilas', '${doc.id}', ${visivel})" style="padding:6px 10px; border-radius:6px; border:1px solid #888; cursor:pointer; font-weight:700; font-size:12px;">
-                                ${visivel ? 'Ocultar' : 'Mostrar'}
-                            </button>
-                            <button onclick="excluirItemBanco('apostilas', '${doc.id}')" style="padding:6px 10px; border-radius:6px; border:none; background:#C9302C; color:#fff; cursor:pointer; font-weight:700; font-size:12px;">
-                                Excluir
-                            </button>
-                        </div>
-                    </div>`;
-                }).join('');
-            }
 
             // 2. Simulados são uma única tabela; as questões ficam no JSONB `questoes`.
             const { data: simulados, error: erroSimulados } = await window.supabase

@@ -5,9 +5,7 @@ import { navigatePortal } from '../../legacy/portalNavigation'
 
 const navigation = [
   ['inicio', 'Início', false],
-  ['apostila', 'Apostila', false],
   ['simulados', 'Simulado', false],
-  ['biblioteca', 'Biblioteca', false],
   ['administrador', 'Administrador', true],
 ]
 

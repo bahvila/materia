@@ -5,7 +5,7 @@ import { callLegacy } from '../../legacy/legacyBridge'
 
 const freeBenefits = [
   [true, 'Simulados gabaritados'],
-  [true, 'Compra avulsa de apostilas e simulados'],
+  [true, 'Compra avulsa de simulados'],
   [false, 'Simulados personalizados'],
   [false, 'Questões comentadas'],
   [false, 'Acesso completo a todos os materiais da plataforma'],

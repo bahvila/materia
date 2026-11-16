@@ -85,7 +85,6 @@ export function LegacyPage({ page }) {
               })
               navigatePortal(sectionFromPath(), { container: containerRef.current, historyMode: 'none' })
               if (window.firebase) {
-                window.carregarApostilasDoFirebase?.()
                 window.carregarSimuladosDoFirebase?.()
               }
             }
@@ -102,7 +101,7 @@ export function LegacyPage({ page }) {
       if (page === 'portal' && containerRef.current) {
         navigatePortal(sectionFromPath(), { container: containerRef.current, historyMode: 'none' })
       } else if (page === 'admin') {
-        const section = new URLSearchParams(currentRoute().split('?')[1] || '').get('section') || 'apostilas'
+        const section = new URLSearchParams(currentRoute().split('?')[1] || '').get('section') || 'simulados'
         window.navegarAdmin?.(section, false)
       }
     }
