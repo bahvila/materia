@@ -324,14 +324,8 @@
                         usado: false
                     });
                 } else {
-                    novaListaCupons.unshift({
-                        id: 'cupom-' + Date.now(),
-                        titulo: `100% de desconto em qualquer apostila (${codigo})!`,
-                        expira: 'nunca',
-                        acaoTexto: 'usar',
-                        tipo: 'apostila',
-                        usado: false
-                    });
+                    mostrarToast('warning', 'Código de cupom inválido.');
+                    return;
                 }
 
                 await atualizarDadosUsuarioNoFirestore({ cupons: novaListaCupons });
@@ -348,7 +342,7 @@
                 return;
             }
 
-            const disponiveis = (perfilFirestore.cupons || []).filter(c => !c.usado);
+            const disponiveis = (perfilFirestore.cupons || []).filter(c => !c.usado && c.tipo !== 'apostila');
             if (disponiveis.length === 0) {
                 container.innerHTML = `<p style="text-align:center; font-size:13px; color:#666;">Nenhum cupom disponível no momento.</p>`;
                 return;
@@ -430,25 +424,7 @@ let aguardandoEscolherApostilaParaCupom = false;
         let apostilaSelecionada = null;
         let filtroApostilaAtivo = "";
 
-        async function carregarApostilasDoFirebase() {
-            try {
-                const snap = await db.collection("apostilas").get();
-                if (!snap.empty) {
-                    // Mostra apenas as apostilas que não estão ocultas pelo Admin
-                    catalogoApostilas = snap.docs
-                        .map(doc => ({ id: doc.id, ...doc.data() }))
-                        .filter(ap => ap.ativo !== false);
-                } else {
-                    catalogoApostilas = [];
-                }
-            } catch (e) {
-                console.error("Erro ao carregar apostilas do Firestore:", e);
-                catalogoApostilas = [];
-            }
-            renderizarCatalogoApostilas();
-            renderizarBibliotecaAluno();
-            restaurarApostilaPeloHash();
-        }
+        async function carregarApostilasDoFirebase() { /* Apostilas desativadas; tela preservada nos arquivos. */ }
 
         function executarBuscaInicial() {
             const termo = document.getElementById('input-busca-home').value.trim();
@@ -516,65 +492,9 @@ let aguardandoEscolherApostilaParaCupom = false;
             `).join('');
         }
 
-        function renderizarBibliotecaAluno() {
-            const gridBib = document.getElementById('grid-biblioteca-aluno');
-            const idsAdquiridos = perfilFirestore.bibliotecaIds || [];
-            const listaBib = catalogoApostilas.filter(ap => perfilFirestore.isPremium || ['admin', 'super_admin'].includes(perfilFirestore.tipoUsuario) || idsAdquiridos.includes(ap.id));
+        function renderizarBibliotecaAluno() { /* Apostilas desativadas; tela preservada nos arquivos. */ }
 
-            if (listaBib.length === 0) {
-                gridBib.innerHTML = `<p style="grid-column: 1/-1; text-align:center;">Você ainda não possui apostilas na sua biblioteca.</p>`;
-                return;
-            }
-
-            gridBib.innerHTML = listaBib.map(ap => `
-                <div class="card-apostila" onclick="mudarSeparador('apostila'); abrirDetalheApostilaPorId('${ap.id}', true);">
-                    <img src="${ap.capaUrl}" onerror="this.onerror=null; this.src='capa apostila de administração_2.jpg';" alt="${ap.titulo}">
-                    <h3>${ap.titulo}</h3>
-                    <p>${ap.subtitulo}</p>
-                </div>
-            `).join('');
-        }
-
-        function abrirDetalheApostilaPorId(idApostila, isVindoDaBiblioteca) {
-            apostilaSelecionada = catalogoApostilas.find(a => a.id === idApostila) || apostilaPadraoAdmin;
-            document.querySelectorAll('.subview-apostila').forEach(v => v.classList.remove('active'));
-            document.getElementById('sub-detalhe').classList.add('active');
-
-            const banner = document.getElementById('banner-escolha-apostila-cupom');
-            if (banner) banner.style.display = 'none';
-
-            document.getElementById('detalhe-img-capa').src = apostilaSelecionada.capaUrl || 'capa apostila de administração.jpg';
-            document.getElementById('detalhe-box-descricao').innerHTML = apostilaSelecionada.descricao || apostilaPadraoAdmin.descricao;
-            document.getElementById('detalhe-titulo-card').innerText = apostilaSelecionada.titulo;
-            document.getElementById('detalhe-sub-card').innerText = apostilaSelecionada.subtitulo;
-            document.getElementById('detalhe-ano-card').innerText = apostilaSelecionada.ano || '2026';
-
-            const jaNaBiblioteca = (perfilFirestore.bibliotecaIds || []).includes(apostilaSelecionada.id);
-            const temAcessoLiberado = ['admin', 'super_admin'].includes(perfilFirestore.tipoUsuario) || perfilFirestore.isPremium === true || jaNaBiblioteca;
-
-            const spanPreco = document.getElementById('detalhe-preco-card');
-            const btnCupom = document.getElementById('btn-tenho-cupom-apostila');
-            const btnTeste = document.getElementById('btn-teste-20-paginas');
-
-            if (temAcessoLiberado) {
-                // Usuário Premium ou já dono da apostila: esconde "(14,99)", botão cupom e botão teste
-                spanPreco.style.display = 'none';
-                btnCupom.style.display = 'none';
-                btnTeste.style.display = 'none';
-            } else {
-                // Usuário Free que ainda não tem a apostila: mostra "(14,99)", botão cupom e botão teste
-                spanPreco.style.display = 'block';
-                spanPreco.innerText = `(${apostilaSelecionada.preco || '14,99'})`;
-                btnCupom.style.display = 'block';
-                btnTeste.style.display = 'flex';
-            }
-
-            // Se o usuário veio do catálogo após clicar em "usar cupom", abre o pop-up de confirmação automaticamente!
-            if (aguardandoEscolherApostilaParaCupom && !temAcessoLiberado) {
-                aguardandoEscolherApostilaParaCupom = false;
-                abrirPopupConfirmacaoCupomApostila();
-            }
-        }
+        function abrirDetalheApostilaPorId(idApostila, isVindoDaBiblioteca) { /* Apostilas desativadas; tela preservada nos arquivos. */ }
 
         function voltarParaCatalogo() {
             document.querySelectorAll('.subview-apostila').forEach(v => v.classList.remove('active'));
@@ -669,15 +589,7 @@ let aguardandoEscolherApostilaParaCupom = false;
             return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
         }
 
-        async function restaurarApostilaPeloHash() {
-            const hash = window.portalCurrentRoute().split('#')[1] || '';
-            const match = hash.match(/^leitor\/([a-f0-9]{64})$/);
-            if (!match || !catalogoApostilas.length) return;
-            const candidatos = await Promise.all(catalogoApostilas.map(async ap => ({ ap, hash: await gerarHashApostila(ap.id) })));
-            if (window.portalCurrentRoute() !== `/apostila#${hash}`) return;
-            const encontrado = candidatos.find(item => item.hash === match[1]);
-            if (encontrado) abrirDetalheApostilaPorId(encontrado.ap.id, false);
-        }
+        async function restaurarApostilaPeloHash() { /* Apostilas desativadas; tela preservada nos arquivos. */ }
 
         async function iniciarLeituraPDF(apenasTeste20Paginas) {
             const idAtual = apostilaSelecionada.id || "admin-default";
@@ -902,9 +814,6 @@ let aguardandoEscolherApostilaParaCupom = false;
                         <div class="info">
                             <strong>${sim.area}</strong>
                             <p>${sim.assunto}</p>
-                            <div class="link-materiais-yellow" onclick="event.stopPropagation(); mudarSeparador('apostila'); abrirDetalheApostilaPorId('admin-default', false);">
-                                Materiais recomendados ↗
-                            </div>
                         </div>
                     </div>
                     <button type="button" class="btn-excluir-lateral" title="Excluir" aria-label="Remover simulado">

@@ -2,17 +2,13 @@ import { currentRoute, routeUrl } from './hashedRoutes'
 
 export const portalRoutes = {
   inicio: '/inicio',
-  apostila: '/apostila',
   simulados: '/simulados',
-  biblioteca: '/biblioteca',
-  administrador: '/administrador/apostilas',
+  administrador: '/administrador/simulados',
 }
 
 const portalTitles = {
   inicio: 'Matéria',
-  apostila: 'Apostila | Matéria',
   simulados: 'Simulados | Matéria',
-  biblioteca: 'Biblioteca | Matéria',
   administrador: 'Administrador | Matéria',
 }
 
@@ -21,11 +17,8 @@ export function sectionFromPath(pathname = currentRoute()) {
   const acceptedRoutes = {
     '/': 'inicio',
     '/inicio': 'inicio',
-    '/apostila': 'apostila',
-    '/apostilas': 'apostila',
     '/simulado': 'simulados',
     '/simulados': 'simulados',
-    '/biblioteca': 'biblioteca',
     '/administrador': 'administrador',
   }
   if (path.startsWith('/administrador/')) return 'administrador'
@@ -44,7 +37,7 @@ export function navigatePortal(section, { container = document, historyMode = 'p
 
   if (target === 'administrador') {
     const frame = container.querySelector('#admin-legacy-frame')
-    const adminSection = currentRoute().match(/^\/administrador\/(apostilas|simulados|cupons|tags)/)?.[1] || 'apostilas'
+    const adminSection = currentRoute().match(/^\/administrador\/(simulados|cupons|tags)/)?.[1] || 'simulados'
     const frameSource = routeUrl(`/admin?section=${adminSection}`)
     if (frame && !frame.src) frame.src = frameSource
     else if (frame?.contentWindow?.navegarAdmin) frame.contentWindow.navegarAdmin(adminSection, false)
@@ -63,7 +56,7 @@ export function navigatePortal(section, { container = document, historyMode = 'p
 
   document.title = portalTitles[target]
   const destinationPath = target === 'administrador'
-    ? `/administrador/${currentRoute().match(/^\/administrador\/(apostilas|simulados|cupons|tags)/)?.[1] || 'apostilas'}`
+    ? `/administrador/${currentRoute().match(/^\/administrador\/(simulados|cupons|tags)/)?.[1] || 'simulados'}`
     : portalRoutes[target]
   const readerRoute = currentRoute()
   const destination = routeUrl(historyMode === 'none' && target === 'apostila' && readerRoute.includes('#leitor/') ? readerRoute : destinationPath)
