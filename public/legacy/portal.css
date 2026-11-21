@@ -1062,8 +1062,19 @@ header { gap: 18px; }
 
 /* Simulados use horizontal banners instead of the apostila cover grid. */
 .container:has(#simulados.active #sim-view-lobby.active),
-.container:has(#simulados.active #sim-view-catalogo.active) { padding: 0; }
-#simulados .catalog-layout { grid-template-columns: 233px minmax(0, 1fr); gap: 0; min-height: calc(100dvh - 80px); }
+.container:has(#simulados.active #sim-view-catalogo.active) { width: 100%; padding: 0; }
+.portal-content > .container:has(#simulados.active :is(#sim-view-lobby, #sim-view-catalogo).active) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+#simulados.active:has(#sim-view-lobby.active, #sim-view-catalogo.active),
+#simulados :is(#sim-view-lobby, #sim-view-catalogo).active {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+#simulados .catalog-layout { grid-template-columns: 233px minmax(0, 1fr); gap: 0; flex: 1; }
 #simulados .catalog-sidebar { align-self: stretch; padding: 36px 7px 24px 24px; border-right: 1px solid #a69890; background: transparent; }
 #simulados .catalog-tags { position: sticky; top: 100px; max-height: calc(100dvh - 110px); gap: 10px; padding-right: 46px; }
 #simulados .catalog-tag { min-height: 42px; padding: 8px 12px; border-radius: 10px; font-size: 13px; }
@@ -1128,7 +1139,14 @@ header { gap: 18px; }
 }
 .premium-plan-button span { font-size: .8em; font-weight: 600; }
 .coluna-direita-assinatura small { display: block; margin: 8px 0 16px; }
-.portal-privacy { padding: 12px 20px; color: #49362e; font-size: .875rem; }
+.portal-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+.portal-content { display: flex; flex-direction: column; flex: 1; }
+.portal-privacy { padding: 12px 20px; border-top: 1px solid #ddd3cc; color: #49362e; font-size: .875rem; }
 .portal-privacy a { color: inherit; text-decoration: underline; }
 .portal-privacy-notice {
     position: fixed;

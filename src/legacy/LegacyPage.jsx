@@ -123,8 +123,10 @@ export function LegacyPage({ page }) {
     <>
       <ToastProvider />
       <SystemConfirmProvider />
-      <div ref={containerRef} dangerouslySetInnerHTML={{ __html: markup }} />
-      {page === 'portal' && markup && <PortalPrivacy />}
+      <div className={page === 'portal' ? 'portal-page' : undefined}>
+        <div ref={containerRef} className={page === 'portal' ? 'portal-content' : undefined} dangerouslySetInnerHTML={{ __html: markup }} />
+        {page === 'portal' && markup && <PortalPrivacy />}
+      </div>
     </>
   )
 }
