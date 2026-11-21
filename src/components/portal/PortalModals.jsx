@@ -44,8 +44,9 @@ export function PremiumModal() {
         </div>
         <div className="coluna-direita-assinatura">
           <img className="premium-marca-imagem" src={sitePath('/assets/íconemateriapremium.png')} alt="Matéria Premium" />
-          <div className="preco-gigante">R$ 24,<small>99</small></div>
-          <LegacyButton className="btn-dourado-assinar" onLegacyClick="abrirCheckoutPagamento" legacyArgs={['Assinatura Matéria Premium', '24,99', 'premium']}>ASSINE AGORA</LegacyButton>
+          <LegacyButton className="btn-dourado-assinar" onLegacyClick="abrirCheckoutPagamento" legacyArgs={['Matéria Premium Mensal', '24,99', 'premium', 'mensal']}>Mensal · R$ 24,99/mês</LegacyButton>
+          <LegacyButton className="btn-dourado-assinar" onLegacyClick="abrirCheckoutPagamento" legacyArgs={['Matéria Premium Semestral', '99,99', 'premium', 'semestral']}>Semestral · R$ 99,99 a cada 6 meses</LegacyButton>
+          <small>Mesmos benefícios Premium. Renovação automática conforme o plano.</small>
           <LegacyButton className="btn-header-entrar" onLegacyClick="gerenciarAssinatura">Gerenciar assinatura</LegacyButton>
         </div>
       </div>

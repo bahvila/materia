@@ -175,13 +175,15 @@
         <div id="simulados" class="tab-content">
             
             <!-- VISTA 1: LOBBY PRINCIPAL -->
-            <div id="sim-view-lobby" class="view-simulado">
+            <div id="sim-view-lobby" class="view-simulado active">
                 <div class="catalog-layout">
                     <aside class="catalog-sidebar" aria-label="Tags dos meus simulados"><div id="catalog-tags-salvos" class="catalog-tags"></div></aside>
                     <div class="catalog-main">
+                        <h1>Meus simulados</h1>
+                        <p>Pratique para a ANAC com simulados online por assunto, gabarito comentado e histórico de desempenho.</p>
                         <div class="catalog-toolbar">
                             <input type="search" id="input-busca-simulados-salvos" class="catalog-search" aria-label="Pesquisar meus simulados" placeholder="Pesquise nos seus simulados..." oninput="renderizarSimuladosSalvosNoLobby()">
-                            <div class="catalog-actions"><button onclick="abrirCatalogoSimulados()">Novo simulado +</button><button onclick="abrirTelaHistorico()">Histórico</button></div>
+                            <div class="catalog-actions"><button onclick="abrirCatalogoSimulados()">Novo simulado +</button></div>
                         </div>
                         <div id="container-simulado-criado" class="catalog-grid"></div>
                     </div>
@@ -189,17 +191,28 @@
             </div>
 
             <!-- VISTA 5: CATÁLOGO DE SIMULADOS DEDICADO -->
-            <div id="sim-view-catalogo" class="view-simulado active">
+            <div id="sim-view-catalogo" class="view-simulado">
                 <div class="catalog-layout">
                     <aside class="catalog-sidebar" aria-label="Tags"><div id="catalog-tags-simulados" class="catalog-tags"></div></aside>
                     <div class="catalog-main">
                         <div class="catalog-toolbar">
                             <input type="search" id="input-busca-catalogo-simulado" class="catalog-search" aria-label="Pesquisar simulados" placeholder="Pesquise por matéria, assunto ou disciplina..." oninput="renderizarListaSimulados()">
-                            <div class="catalog-actions"><button onclick="voltarParaLobbySimulado()">Meus simulados</button><button onclick="abrirTelaHistorico()">Histórico</button></div>
+                            <div class="catalog-actions"><button onclick="voltarParaLobbySimulado()">Meus simulados</button></div>
                         </div>
                         <div id="grid-catalogo-simulados" class="catalog-grid"></div>
                     </div>
                 </div>
+            </div>
+
+            <div id="sim-view-detalhe" class="view-simulado">
+                <article class="simulado-detalhe">
+                    <button type="button" class="btn-voltar-hist" onclick="abrirCatalogoSimulados()">← Catálogo</button>
+                    <h1 id="sim-detalhe-titulo"></h1>
+                    <img id="sim-detalhe-capa" alt="">
+                    <p id="sim-detalhe-descricao"></p>
+                    <p id="sim-detalhe-dados"></p>
+                    <button type="button" class="btn-dourado-assinar" onclick="adicionarSimuladoDoDetalhe()">Adicionar simulado</button>
+                </article>
             </div>
 
             <!-- VISTA 3: TELA DE PROVA -->
@@ -236,7 +249,7 @@
             <!-- VISTA 2: TELA DE HISTÓRICO SEPARADA -->
             <div id="sim-view-historico" class="view-simulado">
                 <div class="header-historico-tela">
-                    <button class="btn-voltar-hist" onclick="abrirCatalogoSimulados()" aria-label="Voltar aos simulados">←</button>
+                    <button class="btn-voltar-hist" onclick="mudarSeparador('simulados')" aria-label="Voltar aos simulados">←</button>
                     <h1>Histórico</h1>
                 </div>
                 <div id="container-cards-historico" class="grid-historico-cards"></div>

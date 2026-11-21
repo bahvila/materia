@@ -5,6 +5,7 @@ const hashes = {
   "/inicio": "a0c4ea6670ac009ae31b57487fc1c6f021b69383b74b77a5b93670398b78b559",
   "/apostila": "2df623e580bf7456b4fd54ba457b7c720734206ff9493ce9a0d6d53ec5fa289a",
   "/simulados": "dafc1d0cb673478ddeb47017dffb37ab8b32df99d7cd8c57748bbd9460d9c1ba",
+  "/historico": "historico",
   "/biblioteca": "49291ef7c73676f7088cab50786f1bb053b4cc6e3d089b786b603c0bab192d15",
   "/administrador/apostilas": "517a675fd46066810b8f6b1a6a51f794e8ed261b94fefd1bc33302f7ef8fa007",
   "/administrador/simulados": "b3915f368c618a355940c6c4e45b0d05f2ec8adc1f6b13f85acfbabf022f0784",

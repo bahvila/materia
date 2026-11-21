@@ -3,6 +3,12 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
         const adminSections = ['simulados', 'cupons', 'tags'];
+        const camposTaxonomia = ['dificuldade', 'assunto', 'subsecao', 'secao', 'capitulo', 'modulo', 'bloco'];
+        let bancoQuestoes = [];
+        let configuracaoSimulado = {};
+        let requisicaoOrigem = 0;
+        let carregandoOrigem = false;
+        let importandoCSV = false;
         let tagsAdmin = [];
         let conteudosTagsAdmin = [];
         let carregamentoTagsAdmin = 0;
@@ -140,21 +146,74 @@
                 .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         }
 
+        async function carregarBancoQuestoes(id) {
+            const { data, error } = await window.supabase.rpc('get_simulado_question_bank', { simulado_id: id });
+            if (error) throw error;
+            return data || [];
+        }
+
+        async function selecionarOrigemQuestoes() {
+            const select = document.getElementById('adm-sim-origem');
+            const token = ++requisicaoOrigem;
+            carregandoOrigem = true;
+            preencherFiltrosQuestoes();
+            try {
+                const questoes = select.value ? await carregarBancoQuestoes(select.value) : [];
+                if (token === requisicaoOrigem) preencherFiltrosQuestoes(questoes);
+            } catch (error) {
+                if (token === requisicaoOrigem) {
+                    select.value = '';
+                    mostrarToast('error', error.message, { title: 'Erro ao carregar questões' });
+                }
+            } finally {
+                if (token === requisicaoOrigem) carregandoOrigem = false;
+            }
+        }
+
+        function valorTaxonomia(questao, campo) {
+            return String(questao[campo] ?? '').trim() || String(questao.metadata?.[campo] ?? '').trim();
+        }
+
+        function filtrosSelecionados() {
+            return Object.fromEntries(camposTaxonomia.map(campo => [
+                campo, document.getElementById(`filtro-col-${campo}`).value
+            ]).filter(([, valor]) => valor));
+        }
+
+        function atualizarTotalQuestoes() {
+            const filtros = Object.entries(filtrosSelecionados());
+            document.getElementById('adm-sim-qtd').value = bancoQuestoes.filter(questao =>
+                filtros.every(([campo, valor]) => valorTaxonomia(questao, campo) === valor)
+            ).length;
+        }
+
         function preencherFiltrosQuestoes(questoes = [], filtrosSalvos = {}) {
             const valores = Object.fromEntries(camposTaxonomia.map(campo => [campo, new Set()]));
             questoes.forEach(questao => camposTaxonomia.forEach(campo => {
-                const valor = questao[campo] || questao.metadata?.[campo];
-                if (String(valor || '').trim()) valores[campo].add(String(valor).trim());
+                const valor = valorTaxonomia(questao, campo);
+                if (valor) valores[campo].add(valor);
             }));
             camposTaxonomia.forEach(campo => {
                 const select = document.getElementById(`filtro-col-${campo}`);
-                const opcoes = [...valores[campo]].sort();
-                select.innerHTML = `<option value="">Todos (${opcoes.length})</option>` + opcoes
-                    .map(valor => `<option value="${valor}" ${valor === filtrosSalvos[campo] ? 'selected' : ''}>${valor}</option>`).join('');
+                if (filtrosSalvos[campo]) valores[campo].add(filtrosSalvos[campo]);
+                const opcoes = [...valores[campo]].sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
+                select.replaceChildren(new Option('Todos', ''), ...opcoes.map(valor => new Option(valor, valor)));
+                select.value = filtrosSalvos[campo] || '';
             });
+            bancoQuestoes = questoes;
+            atualizarTotalQuestoes();
         }
 
+        camposTaxonomia.forEach(campo => {
+            document.getElementById(`filtro-col-${campo}`).addEventListener('change', atualizarTotalQuestoes);
+        });
+
         function novoSimulado() {
+            requisicaoOrigem++;
+            carregandoOrigem = false;
+            configuracaoSimulado = {};
+            document.getElementById('adm-sim-origem').value = '';
+            document.getElementById('adm-sim-origem').disabled = false;
             [...document.getElementById('adm-sim-tags').options].forEach(option => { option.selected = false; });
             document.getElementById('adm-sim-id').value = '';
             document.getElementById('adm-sim-titulo').value = '';
@@ -177,6 +236,7 @@
         });
 
         async function salvarConfigSimulado() {
+            if (carregandoOrigem) return mostrarToast('info', 'Aguarde o carregamento do banco de questões.');
             if (!validarCamposObrigatorios([
                 ['adm-sim-tags', 'Tag do simulado'],
                 ['adm-sim-titulo', 'Título do simulado'],
@@ -187,16 +247,12 @@
             ])) return;
             const id = document.getElementById('adm-sim-id').value;
             const titulo = document.getElementById('adm-sim-titulo').value.trim();
-            const slug = document.getElementById('adm-sim-slug').value.trim() || gerarSlug(titulo);
+            const slug = id ? document.getElementById('adm-sim-slug').value
+                : [gerarSlug(titulo), crypto.randomUUID().slice(0, 8)].filter(Boolean).join('-');
             if (!titulo || !slug) return mostrarToast('warning', 'Informe o título do simulado.', { title: 'Título obrigatório' });
 
             const preco = Number(document.getElementById('adm-sim-preco').value.replace(',', '.'));
             if (!Number.isFinite(preco) || preco < 0) return mostrarToast('warning', 'Informe um preço válido.');
-            const filtros = {};
-            camposTaxonomia.forEach(campo => {
-                const valor = document.getElementById(`filtro-col-${campo}`).value;
-                if (valor) filtros[campo] = valor;
-            });
             const row = {
                 tags: [...document.getElementById('adm-sim-tags').selectedOptions].map(option => option.value),
                 titulo,
@@ -206,7 +262,8 @@
                 preco_centavos: Math.round(Number(document.getElementById('adm-sim-preco').value.replace(',', '.')) * 100),
                 duracao_minutos: Number(document.getElementById('adm-sim-tempo').value) || 60,
                 status: document.getElementById('adm-sim-status').value,
-                configuracao: { filtros },
+                configuracao: { ...configuracaoSimulado, filtros: filtrosSelecionados() },
+                ...(!id ? { questoes: bancoQuestoes } : {}),
                 published_at: document.getElementById('adm-sim-status').value === 'publicado' ? new Date().toISOString() : null,
                 updated_at: new Date().toISOString(),
             };
@@ -216,16 +273,28 @@
             const { data, error } = await query;
             if (error) return mostrarToast('error', error.message, { title: 'Erro ao salvar simulado' });
             document.getElementById('adm-sim-id').value = data.id;
+            document.getElementById('adm-sim-slug').value = slug;
+            document.getElementById('adm-sim-origem').disabled = true;
+            document.getElementById('adm-csv-simid').dataset.preferred = data.id;
             definirStatus('status-sim', 'Simulado salvo com sucesso.');
             mostrarToast('success', `O simulado “${titulo}” foi ${id ? 'atualizado' : 'criado'} com sucesso.`, { title: id ? 'Simulado atualizado' : 'Simulado criado' });
-            await carregarListasAdmin();
+            await Promise.all([carregarListasAdmin(), carregarTagsAdmin()]);
             sincronizarPortal('simulados');
         }
 
         async function editarSimuladoNaCaixa(id) {
             const { data, error } = await window.supabase.from('simulados').select(window.materiaContent.simuladoColumns).eq('id', id).single();
             if (error) return mostrarToast('error', error.message, { title: 'Erro ao carregar simulado' });
-            data.questoes = await window.materiaContent.questions(data.id);
+            try {
+                data.questoes = await carregarBancoQuestoes(data.id);
+            } catch (error) {
+                return mostrarToast('error', error.message, { title: 'Erro ao carregar questões' });
+            }
+            requisicaoOrigem++;
+            carregandoOrigem = false;
+            configuracaoSimulado = data.configuracao || {};
+            document.getElementById('adm-sim-origem').value = '';
+            document.getElementById('adm-sim-origem').disabled = true;
             await carregarTagsFormularioAdmin('simulado', data.tags || []);
             document.getElementById('adm-sim-id').value = data.id;
             document.getElementById('adm-sim-titulo').value = data.titulo;
@@ -274,10 +343,16 @@
             }
             const csvSelect = document.getElementById('adm-csv-simid');
             if (csvSelect) {
-                const atual = csvSelect.value;
-                csvSelect.innerHTML = '<option value="">Selecione...</option>' + (simulados || [])
-                    .map(simulado => `<option value="${simulado.id}">${simulado.titulo} (${simulado.quantidade_questoes || 0})</option>`).join('');
-                if ([...(simulados || [])].some(simulado => simulado.id === atual)) csvSelect.value = atual;
+                const atualizar = (select, placeholder, atual) => {
+                    select.replaceChildren(new Option(placeholder, ''), ...(simulados || []).map(sim =>
+                        new Option(`${sim.titulo} · ${sim.descricao || sim.slug}`, sim.id)
+                    ));
+                    select.value = (simulados || []).some(sim => sim.id === atual) ? atual : '';
+                };
+                atualizar(csvSelect, 'Selecione um simulado cadastrado', csvSelect.dataset.preferred || csvSelect.value);
+                delete csvSelect.dataset.preferred;
+                const origem = document.getElementById('adm-sim-origem');
+                atualizar(origem, 'Começar sem questões', origem.value);
             }
         }
 
@@ -305,7 +380,7 @@
             if (error) return mostrarToast('error', error.message, { title: 'Erro ao excluir simulado' });
             mostrarToast('success', `O simulado “${titulo}” foi excluído.`, { title: 'Simulado excluído' });
             if (document.getElementById('adm-sim-id').value === id) novoSimulado();
-            await carregarListasAdmin();
+            await Promise.all([carregarListasAdmin(), carregarTagsAdmin()]);
             sincronizarPortal('simulados');
         }
 
@@ -467,6 +542,7 @@ function alternarCamposTipoCupomAdmin() {
         navegarAdmin(secaoAdminAtual(), false);
 
         async function importarPlanilhaCSV() {
+            if (importandoCSV) return;
             if (!validarCamposObrigatorios([['adm-csv-simid', 'Simulado'], ['adm-sim-csv', 'Arquivo CSV']])) return;
             const input = document.getElementById('adm-sim-csv');
             const simId = document.getElementById('adm-csv-simid').value;
@@ -475,70 +551,69 @@ function alternarCamposTipoCupomAdmin() {
             const status = document.getElementById('status-importacao-csv');
             if (!input.files.length || !simId) return mostrarToast('warning', 'Selecione um simulado e um arquivo CSV.', { title: 'Importação incompleta' });
 
-            const { data: simulado, error: loadError } = await window.supabase
-                .from('simulados').select('id,titulo').eq('id', simId).single();
-            if (loadError) return mostrarToast('error', loadError.message, { title: 'Erro ao carregar simulado' });
-            simulado.questoes = await window.materiaContent.questions(simulado.id);
-            status.innerText = 'Lendo e validando a planilha...';
-
-            Papa.parse(input.files[0], {
-                header: false,
-                skipEmptyLines: true,
-                encoding,
-                complete: async ({ data: linhas }) => {
-                    const novasQuestoes = linhas.flatMap((linha, index) => {
-                        if (!String(linha[0] || '').trim()) return [];
-                        if (index === 0 && String(linha[0]).toLowerCase().includes('enunciado')) return [];
-                        const legacy = {
-                            Enunciado: String(linha[0] || '').trim(),
-                            Alternativa_Correta: String(linha[1] || '').trim(),
-                            Incorreta_1: String(linha[2] || '').trim(),
-                            Incorreta_2: String(linha[3] || '').trim(),
-                            Incorreta_3: String(linha[4] || '').trim(),
-                            Incorreta_4: String(linha[5] || '').trim(),
-                            Explicacao: String(linha[6] || '').trim(),
-                            dificuldade: String(linha[7] || '').trim(),
-                            assunto: String(linha[8] || '').trim(),
-                            subsecao: String(linha[9] || '').trim(),
-                            secao: String(linha[10] || '').trim(),
-                            capitulo: String(linha[11] || '').trim(),
-                            modulo: String(linha[12] || '').trim(),
-                            bloco: String(linha[13] || '1').trim()
-                        };
-                        return [{
-                            id: crypto.randomUUID(), enunciado: legacy.Enunciado, comentario: legacy.Explicacao,
-                            dificuldade: legacy.dificuldade || null, assunto: legacy.assunto || null,
-                            subsecao: legacy.subsecao || null, secao: legacy.secao || null,
-                            capitulo: legacy.capitulo || null, modulo: legacy.modulo || null,
-                            bloco: legacy.bloco || null, status: 'publicado', metadata: legacy
-                        }];
-                    });
-                    if (!novasQuestoes.length) {
-                        definirStatus('status-importacao-csv', 'Nenhuma questão válida encontrada.', 'warning');
-                        mostrarToast('warning', 'O arquivo não contém questões válidas para importar.', { title: 'Nenhuma questão encontrada' });
-                        return;
-                    }
-                    const questoes = mode === 'append' ? [...(simulado.questoes || []), ...novasQuestoes] : novasQuestoes;
-                    status.innerText = `Salvando ${questoes.length} questões...`;
-                    const { error } = await window.supabase.from('simulados').update({
-                        questoes, quantidade_questoes: questoes.length, updated_at: new Date().toISOString()
-                    }).eq('id', simulado.id);
-                    if (error) {
-                        definirStatus('status-importacao-csv', 'Erro: ' + error.message, 'error');
-                        mostrarToast('error', error.message, { title: 'Erro ao importar questões' });
-                        return;
-                    }
-                    definirStatus('status-importacao-csv', `${novasQuestoes.length} questões importadas. Total: ${questoes.length}.`);
-                    mostrarToast('success', `${novasQuestoes.length} questões foram importadas. O simulado agora possui ${questoes.length}.`, { title: 'Importação concluída' });
-                    await carregarListasAdmin();
-                    await editarSimuladoNaCaixa(simulado.id);
-                    sincronizarPortal('simulados');
-                },
-                error: (error) => {
-                    definirStatus('status-importacao-csv', 'Não foi possível ler o arquivo.', 'error');
-                    mostrarToast('error', error.message || 'Não foi possível ler o arquivo CSV.', { title: 'Erro na planilha' });
-                },
-            });
+            importandoCSV = true;
+            try {
+                status.innerText = 'Lendo e validando a planilha...';
+                if (!window.Papa) throw new Error('O leitor de CSV não carregou. Atualize a página.');
+                const arquivo = new TextDecoder(encoding, { fatal: true }).decode(await input.files[0].arrayBuffer());
+                const { data: linhas, errors } = window.Papa.parse(arquivo, { skipEmptyLines: 'greedy' });
+                const erroCSV = errors.find(error => error.code !== 'UndetectableDelimiter');
+                if (erroCSV) throw new Error(`CSV inválido na linha ${(erroCSV.row ?? 0) + 1}.`);
+                const { data: simulado, error: loadError } = await window.supabase
+                    .from('simulados').select('id,updated_at').eq('id', simId).single();
+                if (loadError) throw loadError;
+                const novasQuestoes = linhas.flatMap((linha, index) => {
+                    if (!String(linha[0] || '').trim()) return [];
+                    if (index === 0 && String(linha[0]).toLowerCase().includes('enunciado')) return [];
+                    if (!String(linha[1] || '').trim()) throw new Error(`Informe a alternativa correta na linha ${index + 1}.`);
+                    const legacy = {
+                        Enunciado: String(linha[0] || '').trim(),
+                        Alternativa_Correta: String(linha[1] || '').trim(),
+                        Incorreta_1: String(linha[2] || '').trim(),
+                        Incorreta_2: String(linha[3] || '').trim(),
+                        Incorreta_3: String(linha[4] || '').trim(),
+                        Incorreta_4: String(linha[5] || '').trim(),
+                        Explicacao: String(linha[6] || '').trim(),
+                        dificuldade: String(linha[7] || '').trim(),
+                        assunto: String(linha[8] || '').trim(),
+                        subsecao: String(linha[9] || '').trim(),
+                        secao: String(linha[10] || '').trim(),
+                        capitulo: String(linha[11] || '').trim(),
+                        modulo: String(linha[12] || '').trim(),
+                        bloco: String(linha[13] || '1').trim()
+                    };
+                    return [{
+                        id: crypto.randomUUID(), enunciado: legacy.Enunciado, comentario: legacy.Explicacao,
+                        dificuldade: legacy.dificuldade || null, assunto: legacy.assunto || null,
+                        subsecao: legacy.subsecao || null, secao: legacy.secao || null,
+                        capitulo: legacy.capitulo || null, modulo: legacy.modulo || null,
+                        bloco: legacy.bloco || null, status: 'publicado', metadata: legacy
+                    }];
+                });
+                if (!novasQuestoes.length) {
+                    definirStatus('status-importacao-csv', 'Nenhuma questão válida encontrada.', 'warning');
+                    mostrarToast('warning', 'O arquivo não contém questões válidas para importar.', { title: 'Nenhuma questão encontrada' });
+                    return;
+                }
+                const bancoAtual = mode === 'append' ? await carregarBancoQuestoes(simId) : [];
+                const questoes = [...bancoAtual, ...novasQuestoes];
+                status.innerText = `Salvando ${questoes.length} questões...`;
+                const { data: saved, error } = await window.supabase.from('simulados').update({
+                    questoes, updated_at: new Date().toISOString()
+                }).eq('id', simId).eq('updated_at', simulado.updated_at).select('id').maybeSingle();
+                if (error) throw error;
+                if (!saved) throw new Error('O simulado foi alterado durante a importação. Tente novamente.');
+                definirStatus('status-importacao-csv', `${novasQuestoes.length} questões importadas. Total: ${questoes.length}.`);
+                mostrarToast('success', `${novasQuestoes.length} questões foram importadas. O simulado agora possui ${questoes.length}.`, { title: 'Importação concluída' });
+                await carregarListasAdmin();
+                await editarSimuladoNaCaixa(simulado.id);
+                sincronizarPortal('simulados');
+            } catch (error) {
+                definirStatus('status-importacao-csv', error.message, 'error');
+                mostrarToast('error', error.message, { title: 'Erro ao importar questões' });
+            } finally {
+                importandoCSV = false;
+            }
         }
 async function carregarTagsAdmin() {
     const tipo = document.getElementById('adm-tag-tipo').value;
@@ -550,7 +625,7 @@ async function carregarTagsAdmin() {
     try {
         const [tags, conteudos] = await Promise.all([
             window.supabase.from('content_tags').select('id,nome,tipo').eq('tipo', tipo).order('nome'),
-            window.supabase.from(tipo === 'apostila' ? 'apostilas' : 'simulados').select('id,titulo,tags').order('titulo'),
+            window.supabase.from(tipo === 'apostila' ? 'apostilas' : 'simulados').select('id,titulo,slug,descricao,tags').order('titulo'),
         ]);
         if (token !== carregamentoTagsAdmin) return;
         if (tags.error || conteudos.error) throw tags.error || conteudos.error;
@@ -578,7 +653,8 @@ async function carregarTagsAdmin() {
             lista.appendChild(item);
         });
         conteudoSelect.replaceChildren(new Option('Selecione...', ''));
-        conteudosTagsAdmin.forEach(item => conteudoSelect.add(new Option(item.titulo, item.id)));
+        conteudosTagsAdmin.forEach(item => conteudoSelect.add(new Option(`${item.titulo} · ${item.descricao || item.slug}`, item.id)));
+        if (!conteudosTagsAdmin.length) conteudoSelect.options[0].text = 'Nenhum conteúdo cadastrado';
         conteudoSelect.value = conteudosTagsAdmin.some(item => item.id === selecionado) ? selecionado : '';
         selecionarConteudoTagsAdmin();
         definirStatus('status-tags');

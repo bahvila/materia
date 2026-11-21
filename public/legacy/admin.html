@@ -28,6 +28,8 @@
         <div class="admin-form-grid two"><div><label>Título</label><input type="text" id="adm-sim-titulo" placeholder="Ex.: Enfermagem"></div><div><label>Descrição</label><input type="text" id="adm-sim-desc" placeholder="Ex.: Anatomia sistêmica"></div></div>
         <input type="hidden" id="adm-sim-slug">
         <div class="admin-form-grid three"><div><label>URL da capa</label><input type="text" id="adm-sim-capa" placeholder="https://..."></div><div><label>Questões</label><input type="number" id="adm-sim-qtd" value="0" readonly></div><div><label>Tempo (min)</label><input type="number" id="adm-sim-tempo" value="60"></div></div>
+        <label for="adm-sim-origem">Reutilizar banco de questões de outro simulado</label>
+        <select id="adm-sim-origem" onchange="selecionarOrigemQuestoes()"><option value="">Começar sem questões</option></select>
         <details class="admin-filters"><summary>Filtros opcionais das questões</summary><div class="admin-form-grid two">
           <div><label>Dificuldade</label><select id="filtro-col-dificuldade"><option value="">Todas</option></select></div><div><label>Assunto</label><select id="filtro-col-assunto"><option value="">Todos</option></select></div>
           <div><label>Subseção</label><select id="filtro-col-subsecao"><option value="">Todas</option></select></div><div><label>Seção</label><select id="filtro-col-secao"><option value="">Todas</option></select></div>
@@ -37,7 +39,7 @@
         <div class="admin-form-grid status-row"><div><label>Status</label><select id="adm-sim-status"><option value="rascunho">Rascunho</option><option value="publicado">Publicado</option><option value="arquivado">Arquivado</option></select></div><button class="btn-marrom" onclick="salvarConfigSimulado()">Salvar simulado</button></div><div id="status-sim" class="status-msg"></div>
       </article>
       <article class="card-admin">
-        <div class="card-heading-row"><div><p>Importação</p><h3>Questões por CSV</h3></div></div><p class="card-description">Ordem: enunciado, correta, quatro incorretas, explicação, dificuldade, assunto, subseção, seção, capítulo, módulo e bloco.</p>
+        <div class="card-heading-row"><div><p>Importação</p><h3>Questões por CSV</h3></div></div><p class="card-description">Salve o simulado antes de importar. Ordem das colunas: enunciado, correta, quatro incorretas, explicação, dificuldade, assunto, subseção, seção, capítulo, módulo e bloco.</p>
         <div class="admin-form-grid four"><div><label>Simulado</label><select id="adm-csv-simid"><option value="">Selecione...</option></select></div><div><label>Modo</label><select id="adm-csv-mode"><option value="replace">Substituir</option><option value="append">Adicionar</option></select></div><div><label>Codificação</label><select id="adm-csv-encoding"><option value="UTF-8">UTF-8</option><option value="ISO-8859-1">ISO-8859-1</option></select></div><div><label>Arquivo CSV</label><input type="file" id="adm-sim-csv" accept=".csv"></div></div>
         <button class="btn-marrom admin-action-compact" onclick="importarPlanilhaCSV()">Importar questões</button><div id="status-importacao-csv" class="status-msg"></div>
       </article>
