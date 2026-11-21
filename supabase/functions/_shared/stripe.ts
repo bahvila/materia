@@ -30,7 +30,7 @@ export async function syncSubscription(id: string) {
   const userId = customer?.user_id || sub.metadata.user_id;
   const planId = sub.metadata.plan_id;
   if (!userId || !planId || sub.metadata.application !== 'materia') return;
-  const { data: plan } = check(await db.from('plans').select('id').eq('id', planId).eq('slug', 'materia-premium').single());
+  const { data: plan } = check(await db.from('plans').select('id').eq('id', planId).in('slug', ['materia-premium', 'materia-premium-semestral']).single());
   const periods = sub.items.data;
   const end = Math.min(...periods.map(item => item.current_period_end));
   const start = Math.min(...periods.map(item => item.current_period_start));

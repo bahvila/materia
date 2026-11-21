@@ -103,7 +103,7 @@ function simuladoFromRow(row) {
     descricaoVisivel: row.descricao || '',
     nome: row.descricao ? `${row.titulo}: ${row.descricao}` : row.titulo,
     capaUrl: storagePublicUrl('apostila-capas', row.imagem_path),
-    questoes_banca: row.quantidade_questoes || row.questoes?.length || config.questoes_banca || 20,
+    questoes_banca: row.quantidade_questoes ?? row.questoes?.length ?? config.questoes_banca ?? 20,
     tempo_banca: row.duracao_minutos || config.tempo_banca || 60,
     filtros: config.filtros || {},
     ativo: row.status === 'publicado',
@@ -212,7 +212,9 @@ async function profileSnapshot(userId) {
   const [{ data: profile }, { data: accesses }, { data: progress }, { data: subscriptions }, { data: simulados }, { data: isPremium }] = results
   if (!profile) return null
   const progressoPaginas = Object.fromEntries((progress || []).map((item) => [item.apostila_id, item.pagina_atual]))
-  const activeSubscription = (subscriptions || []).find((item) => item.plans?.slug === 'materia-premium' && new Date(item.current_period_end) > new Date())
+  const activeSubscription = (subscriptions || []).find((item) =>
+    ['materia-premium', 'materia-premium-semestral'].includes(item.plans?.slug) && new Date(item.current_period_end) > new Date()
+  )
   return {
     nome: profile.nome,
     email: profile.email,
@@ -634,8 +636,8 @@ export function installSupabaseFirebaseAdapter() {
   }
   window.supabase = supabase
   window.materiaPayments = {
-    async checkout(tipo, contentId) {
-      const { data, error } = await supabase.functions.invoke('stripe-checkout', { body: { tipo, contentId } })
+    async checkout(tipo, contentId, plano) {
+      const { data, error } = await supabase.functions.invoke('stripe-checkout', { body: { tipo, contentId, plano } })
       if (error) {
         const detail = await error.context?.json?.().catch(() => null)
         throw new Error(detail?.error || 'Não foi possível iniciar o pagamento. Tente novamente.')

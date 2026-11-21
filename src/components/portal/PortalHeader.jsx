@@ -6,6 +6,7 @@ import { navigatePortal } from '../../legacy/portalNavigation'
 const navigation = [
   ['inicio', 'Início', false],
   ['simulados', 'Simulado', false],
+  ['historico', 'Histórico', false],
   ['administrador', 'Administrador', true],
 ]
 
@@ -17,7 +18,7 @@ export function PortalHeader() {
           src={sitePath('/assets/íconemateriamarrom.png')}
           alt="MATÉRIA"
           className="logo-header"
-          onClick={() => navigatePortal('inicio')}
+          onClick={() => navigatePortal('simulados')}
         />
         <nav aria-label="Navegação principal">
           {navigation.map(([id, label, adminOnly]) => (

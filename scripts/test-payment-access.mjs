@@ -20,6 +20,9 @@ await db.exec((await sql('202610280001_initial_schema.sql')).replace('create ext
 await db.exec(await sql('202610280002_client_access.sql'))
 await db.exec(`alter table public.simulados add column tags text[] not null default '{}'; grant all on all tables in schema public to anon, authenticated, service_role;`)
 await db.exec(await sql('202611020001_stripe_access.sql'))
+await db.exec('alter default privileges in schema public grant execute on functions to anon;')
+await db.exec(await sql('202611210001_simulado_filters_and_semester.sql'))
+await db.exec(await sql('202611210002_restrict_simulado_question_bank.sql'))
 const user = '11111111-1111-4111-8111-111111111111'
 const other = '22222222-2222-4222-8222-222222222222'
 const ap = '33333333-3333-4333-8333-333333333333'
@@ -41,10 +44,12 @@ async function as(role, uid = '') {
 async function value(query) { return Object.values((await db.query(query)).rows[0])[0] }
 async function denied(query) { await assert.rejects(db.query(query)) }
 await as('anon')
+assert.equal(await value("select has_function_privilege('anon', 'public.get_simulado_question_bank(uuid)', 'execute')"), false)
 assert.equal(await value('select count(*)::int from simulados'),1)
 await denied('select questoes from simulados')
 await denied('select pdf_path from apostilas')
 await denied(`select get_simulado_questions('${sim}')`)
+await denied(`select get_simulado_question_bank('${sim}')`)
 await as('authenticated',user)
 assert.equal(await value('select has_premium_access()'),false)
 await denied(`select get_simulado_questions('${sim}')`)
@@ -103,5 +108,23 @@ await db.exec(`update profiles set tipo_usuario='admin' where id='${user}'; upda
 await as('authenticated',user)
 assert.equal((await value(`select get_simulado_questions('${sim}')`)).length,1)
 assert.equal(await value(`select get_apostila_pdf('${ap}')`),'private/full.pdf')
+await db.exec(`update simulados
+  set questoes = '[{"enunciado":"protegido","metadata":{"bloco":" 1 "}},{"enunciado":"outro","bloco":"2"}]',
+    configuracao = '{"filtros":{"bloco":"1"}}', status = 'publicado'
+  where id = '${sim}';`)
+assert.equal(await value(`select quantidade_questoes from simulados where id='${sim}'`),1)
+assert.equal((await value(`select get_simulado_question_bank('${sim}')`)).length,2)
+assert.deepEqual((await value(`select get_simulado_questions('${sim}')`)).map(q => q.enunciado),['protegido'])
+await as('service_role')
+await db.exec(`insert into subscriptions(user_id,plan_id,status,provider,provider_subscription_id,current_period_end)
+  select '${other}',id,'active','stripe','sub_semestral',now()+interval '6 months'
+  from plans where slug='materia-premium-semestral';`)
+assert.equal(await value("select intervalo_quantidade from plans where slug='materia-premium-semestral'"),6)
+assert.equal(await value("select preco_centavos from plans where slug='materia-premium-semestral'"),9999)
+await as('authenticated',other)
+assert.equal(await value('select has_premium_access()'),true)
+assert.equal(await value(`select get_apostila_pdf('${ap}')`),'private/full.pdf')
+assert.equal((await value(`select get_simulado_questions('${sim}')`)).length,1)
+await denied(`select get_simulado_question_bank('${sim}')`)
 await db.close()
 console.log('Payment access tests passed: public catalog, private content, forged grants, purchases, isolation, idempotency, refunds, premium and expiry.')

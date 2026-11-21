@@ -138,7 +138,7 @@
             }
             if (id === 'simulados') {
                 document.querySelectorAll('.view-simulado').forEach(v => v.classList.remove('active'));
-                document.getElementById('sim-view-catalogo').classList.add('active');
+                voltarParaLobbySimulado();
             }
             if (id === 'biblioteca') {
                 renderizarBibliotecaAluno();
@@ -538,11 +538,14 @@ let aguardandoEscolherApostilaParaCupom = false;
             });
         }
 
-        function abrirCheckoutPagamento(nomeItem, valorItem, tipoItem) {
+        function abrirCheckoutPagamento(nomeItem, valorItem, tipoItem, plano) {
             fecharModal('modal-premium');
-            checkoutAtual = { nome: nomeItem, valor: valorItem, tipo: tipoItem, contentId: tipoItem === 'apostila' ? apostilaSelecionada.id : tipoItem === 'simulado' ? simuladoAtivoMetadata.uuid : null };
+            checkoutAtual = { nome: nomeItem, valor: valorItem, tipo: tipoItem, plano, contentId: tipoItem === 'apostila' ? apostilaSelecionada.id : tipoItem === 'simulado' ? simuladoAtivoMetadata.uuid : null };
             document.getElementById('item-checkout-nome').innerText = nomeItem;
             document.getElementById('item-checkout-valor').innerText = `R$ ${valorItem}`;
+            document.getElementById('subtitulo-checkout-modal').textContent = tipoItem === 'premium'
+                ? `Renovação automática a cada ${plano === 'semestral' ? '6 meses' : 'mês'}. Cancele em Gerenciar assinatura.`
+                : 'Pagamento único';
             abrirModal('modal-pagamento');
         }
 
@@ -551,7 +554,7 @@ let aguardandoEscolherApostilaParaCupom = false;
             if (pagamentoEmAndamento) return;
             exigirLoginPrimeiro(async () => {
                 pagamentoEmAndamento = true;
-                try { await window.materiaPayments.checkout(checkoutAtual.tipo, checkoutAtual.contentId); }
+                try { await window.materiaPayments.checkout(checkoutAtual.tipo, checkoutAtual.contentId, checkoutAtual.plano); }
                 catch (error) { mostrarToast('error', error.message, { title: 'Pagamento não iniciado' }); }
                 finally { pagamentoEmAndamento = false; }
             });
@@ -750,17 +753,48 @@ let aguardandoEscolherApostilaParaCupom = false;
             renderizarTagsCatalogo('catalog-tags-simulados', listaSimuladosDisponiveis.flatMap(sim => tagsCatalogo(sim, extrairAreaAssunto(sim.nome).area)), filtroSimuladoAtivo, tag => { filtroSimuladoAtivo = tag; renderizarListaSimulados(); });
             const filtrados = listaSimuladosDisponiveis.filter(sim => (!filtroSimuladoAtivo || tagsCatalogo(sim, extrairAreaAssunto(sim.nome).area).includes(filtroSimuladoAtivo)) && textoCatalogo([sim.nome, ...tagsCatalogo(sim, '')].join(' ')).includes(textoCatalogo(termo)));
             
-            container.innerHTML = filtrados.map(sim => {
+            container.replaceChildren(...filtrados.map(sim => {
                 const info = extrairAreaAssunto(sim.nome);
-                const imagemExibir = sim.capaUrl ? sim.capaUrl : `capasimulado${info.areaLimpa}.png`;
-
-                return `
-                <button type="button" class="catalog-card-simulado" onclick="pedirAdicionarSimulado('${sim.nome}', '${sim.id}')">
-                    <span class="info"><strong>${info.area}</strong><span>${info.assunto}</span></span>
-                    <img src="${imagemExibir}" alt="" onerror="this.style.visibility='hidden'">
-                </button>`;
-            }).join('');
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'catalog-card-simulado';
+                const label = document.createElement('span');
+                label.className = 'info';
+                const titulo = document.createElement('strong');
+                const descricao = document.createElement('span');
+                titulo.textContent = sim.tituloVisivel || info.area;
+                descricao.textContent = sim.descricaoVisivel || info.assunto;
+                label.append(titulo, descricao);
+                button.append(label);
+                if (sim.capaUrl) {
+                    const capa = new Image();
+                    capa.alt = '';
+                    capa.src = sim.capaUrl;
+                    capa.onerror = () => capa.remove();
+                    button.append(capa);
+                }
+                button.onclick = () => abrirDetalheSimulado(sim);
+                return button;
+            }));
             if (!filtrados.length) container.innerHTML = '<p class="catalog-empty">Nenhum simulado encontrado para esta busca.</p>';
+        }
+
+        let simuladoDetalhe;
+        function abrirDetalheSimulado(sim) {
+            simuladoDetalhe = sim;
+            document.querySelectorAll('.view-simulado').forEach(view => view.classList.remove('active'));
+            document.getElementById('sim-view-detalhe').classList.add('active');
+            document.getElementById('sim-detalhe-titulo').textContent = sim.tituloVisivel || sim.nome;
+            document.getElementById('sim-detalhe-descricao').textContent = sim.descricaoVisivel;
+            document.getElementById('sim-detalhe-dados').textContent = `${sim.questoes_banca} questões · ${sim.tempo_banca} min`;
+            const capa = document.getElementById('sim-detalhe-capa');
+            capa.hidden = !sim.capaUrl;
+            if (sim.capaUrl) capa.src = sim.capaUrl;
+            else capa.removeAttribute('src');
+        }
+
+        function adicionarSimuladoDoDetalhe() {
+            if (simuladoDetalhe) pedirAdicionarSimulado(simuladoDetalhe.nome, simuladoDetalhe.id);
         }
 
         function pedirAdicionarSimulado(nome, id) {
@@ -772,20 +806,30 @@ let aguardandoEscolherApostilaParaCupom = false;
             });
         }
 
+        let adicionandoSimulado = false;
         async function confirmarAddSimulado() {
-            fecharModal('modal-confirm-add');
-            if (!simuladoPendente) return;
-
-            const listaAtual = [...(perfilFirestore.simuladosAdicionados || [])];
-            if (!listaAtual.some(s => s.id === simuladoPendente.id)) {
-                listaAtual.push(simuladoPendente);
-                await atualizarDadosUsuarioNoFirestore({ simuladosAdicionados: listaAtual });
-                mostrarToast('success', `O simulado “${simuladoPendente.nome}” foi adicionado ao seu painel.`, { title: 'Simulado adicionado' });
-            } else {
-                mostrarToast('info', 'Este simulado já está disponível no seu painel.', { title: 'Simulado já adicionado' });
+            if (adicionandoSimulado || !simuladoPendente || !usuarioAtual) return;
+            const simulado = simuladoPendente;
+            const uid = usuarioAtual.uid;
+            const listaAtual = perfilFirestore.simuladosAdicionados || [];
+            adicionandoSimulado = true;
+            try {
+                if (!listaAtual.some(s => s.id === simulado.id)) {
+                    const simuladosAdicionados = [...listaAtual, simulado];
+                    await db.collection('usuarios').doc(uid).set({ simuladosAdicionados }, { merge: true });
+                    if (usuarioAtual?.uid !== uid) return;
+                    perfilFirestore.simuladosAdicionados = simuladosAdicionados;
+                    mostrarToast('success', `O simulado “${simulado.nome}” foi adicionado ao seu painel.`, { title: 'Simulado adicionado' });
+                } else {
+                    mostrarToast('info', 'Este simulado já está disponível no seu painel.', { title: 'Simulado já adicionado' });
+                }
+                fecharModal('modal-confirm-add');
+                voltarParaLobbySimulado();
+            } catch (error) {
+                mostrarToast('error', error.message, { title: 'Erro ao adicionar simulado' });
+            } finally {
+                adicionandoSimulado = false;
             }
-            renderizarSimuladosSalvosNoLobby();
-            voltarParaLobbySimulado();
         }
 
         let filtroSimuladoSalvoAtivo = '';
@@ -803,24 +847,31 @@ let aguardandoEscolherApostilaParaCupom = false;
                 return;
             }
 
-            container.innerHTML = salvos.map(sim => {
-                const simBanco = listaSimuladosDisponiveis.find(s => s.id === sim.id);
-                const imagemExibir = (simBanco && simBanco.capaUrl) ? simBanco.capaUrl : `capasimulado${sim.areaLimpa}.png`;
-
+            container.innerHTML = salvos.map(() => {
                 return `
                 <div class="catalog-saved-item">
-                    <div class="catalog-card-simulado" role="button" tabindex="0" onkeydown="if(event.target === this && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); this.click(); }" onclick="fluxoClicarSimuladoParaConfigurar('${sim.nome}', '${sim.id}')">
-                        <img src="${imagemExibir}" alt="${sim.area}" onerror="this.style.visibility='hidden'">
-                        <div class="info">
-                            <strong>${sim.area}</strong>
-                            <p>${sim.assunto}</p>
-                        </div>
-                    </div>
+                    <button type="button" class="catalog-card-simulado" aria-label="Iniciar simulado">
+                        <img alt="">
+                        <span class="info"><strong></strong><span></span></span>
+                    </button>
                     <button type="button" class="btn-excluir-lateral" title="Excluir" aria-label="Remover simulado">
                         <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                     </button>
                 </div>`;
             }).join('');
+            container.querySelectorAll('.catalog-card-simulado').forEach((button, index) => {
+                const sim = salvos[index];
+                const imagem = button.querySelector('img');
+                const capa = listaSimuladosDisponiveis.find(item => item.id === sim.id)?.capaUrl;
+                if (capa) {
+                    imagem.onerror = () => imagem.remove();
+                    imagem.src = capa;
+                } else imagem.remove();
+                button.querySelector('strong').textContent = sim.area;
+                button.querySelector('.info span').textContent = sim.assunto;
+                button.setAttribute('aria-label', `Iniciar simulado: ${sim.nome}`);
+                button.onclick = () => fluxoClicarSimuladoParaConfigurar(sim.nome, sim.id);
+            });
             container.querySelectorAll('.btn-excluir-lateral').forEach((button, index) => {
                 const sim = salvos[index];
                 button.onclick = event => pedirRemoverSimulado(event, sim.id, sim.area, sim.assunto);

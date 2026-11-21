@@ -19,6 +19,11 @@ const premiumBenefits = [
   [true, 'Acesso completo a todos os materiais da plataforma'],
 ]
 
+const premiumPlans = [
+  { id: 'mensal', name: 'Mensal', price: '24,99', period: '/mês' },
+  { id: 'semestral', name: 'Semestral', price: '99,99', period: ' a cada 6 meses' },
+]
+
 function BenefitList({ title, benefits, premium = false }) {
   return (
     <div className="col-plano">
@@ -44,8 +49,20 @@ export function PremiumModal() {
         </div>
         <div className="coluna-direita-assinatura">
           <img className="premium-marca-imagem" src={sitePath('/assets/íconemateriapremium.png')} alt="Matéria Premium" />
-          <div className="preco-gigante">R$ 24,<small>99</small></div>
-          <LegacyButton className="btn-dourado-assinar" onLegacyClick="abrirCheckoutPagamento" legacyArgs={['Assinatura Matéria Premium', '24,99', 'premium']}>ASSINE AGORA</LegacyButton>
+          <div className="premium-plan-actions">
+            {premiumPlans.map(({ id, name, price, period }) => (
+              <LegacyButton
+                key={id}
+                className="btn-dourado-assinar premium-plan-button"
+                onLegacyClick="abrirCheckoutPagamento"
+                legacyArgs={[`Matéria Premium ${name}`, price, 'premium', id]}
+              >
+                <strong>{name}</strong>
+                <span>R$ {price}{period}</span>
+              </LegacyButton>
+            ))}
+          </div>
+          <small>Mesmos benefícios Premium. Renovação automática conforme o plano.</small>
           <LegacyButton className="btn-header-entrar" onLegacyClick="gerenciarAssinatura">Gerenciar assinatura</LegacyButton>
         </div>
       </div>

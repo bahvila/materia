@@ -6,11 +6,13 @@ Deno.serve(async req => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers });
   try {
     const user = await userFor(req);
-    const { tipo, contentId } = await req.json();
+    const { tipo, contentId, plano = 'mensal' } = await req.json();
     if (!['premium','apostila','simulado'].includes(tipo)) throw new Error('Produto inválido.');
+    if (tipo === 'premium' && !['mensal', 'semestral'].includes(plano)) throw new Error('Plano inválido.');
+    const planSlugs = ['materia-premium', 'materia-premium-semestral'];
     const table = tipo === 'premium' ? 'plans' : tipo === 'apostila' ? 'apostilas' : 'simulados';
     let query = db.from(table).select('*');
-    query = tipo === 'premium' ? query.eq('slug','materia-premium').eq('ativo',true) : query.eq('id',contentId).eq('status','publicado');
+    query = tipo === 'premium' ? query.eq('slug', plano === 'semestral' ? planSlugs[1] : planSlugs[0]).eq('ativo',true) : query.eq('id',contentId).eq('status','publicado');
     const { data: product } = check(await query.single());
     if (!product || !Number.isInteger(product.preco_centavos) || product.preco_centavos <= 0) throw new Error('Este conteúdo ainda não tem preço configurado.');
     if (tipo !== 'premium') {
@@ -20,7 +22,7 @@ Deno.serve(async req => {
       if (owned?.length) throw new Error('Você já tem acesso a este conteúdo. Atualize a página.');
     }
     if (tipo === 'premium') {
-      const { data: active } = check(await db.from('subscriptions').select('id').eq('user_id',user.id).eq('plan_id',product.id).in('status',['active','trialing']).gt('current_period_end',new Date().toISOString()).limit(1));
+      const { data: active } = check(await db.from('subscriptions').select('id,plans!inner(slug)').eq('user_id',user.id).in('plans.slug',planSlugs).in('status',['active','trialing']).gt('current_period_end',new Date().toISOString()).limit(1));
       if (active?.length) throw new Error('Você já tem Premium. Use Gerenciar assinatura.');
     }
     const { data: existing } = check(await db.from('payment_customers').select('provider_customer_id').eq('user_id',user.id).eq('provider','stripe').maybeSingle());
@@ -34,11 +36,12 @@ Deno.serve(async req => {
       ...(tipo === 'premium' ? { plan_id:product.id } : tipo === 'apostila' ? { apostila_id:product.id } : { simulado_id:product.id }) }).select('id').single());
     const session = await stripe.checkout.sessions.create({
       mode: tipo === 'premium' ? 'subscription' : 'payment', customer: customerId, client_reference_id:user.id,
-      success_url:`${siteUrl()}/?checkout=success&session_id={CHECKOUT_SESSION_ID}#${routes.biblioteca}`, cancel_url:`${siteUrl()}/?checkout=canceled#${tipo === 'simulado' ? routes.simulados : routes.apostila}`,
+      success_url:`${siteUrl()}/?checkout=success&session_id={CHECKOUT_SESSION_ID}#${tipo === 'apostila' ? routes.biblioteca : routes.simulados}`,
+      cancel_url:`${siteUrl()}/?checkout=canceled#${tipo === 'apostila' ? routes.apostila : routes.simulados}`,
       metadata:{ order_id:order!.id, application:'materia' }, payment_method_types:['card'],
       ...(tipo === 'premium' ? { subscription_data:{ metadata:{ application:'materia',user_id:user.id,plan_id:product.id } } } : {}),
       line_items:[{ quantity:1, price_data:{ currency:'brl',unit_amount:product.preco_centavos,product_data:{ name:product.nome || product.titulo },
-        ...(tipo === 'premium' ? { recurring:{ interval:'month' as const } } : {}) } }],
+        ...(tipo === 'premium' ? { recurring:{ interval:'month' as const, interval_count:product.intervalo_quantidade } } : {}) } }],
     }, { idempotencyKey:`materia-checkout-${order!.id}` });
     check(await db.from('stripe_checkout_orders').update({ checkout_session_id:session.id }).eq('id',order!.id));
     return Response.json({ url:session.url }, { headers });

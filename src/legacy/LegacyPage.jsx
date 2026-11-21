@@ -11,6 +11,7 @@ import { ToastProvider } from '../components/feedback/ToastProvider'
 import { installToastBridge } from '../lib/toast'
 import { SystemConfirmProvider } from '../components/feedback/SystemConfirmProvider'
 import { installSystemConfirmBridge } from '../lib/systemConfirm'
+import { PortalPrivacy } from '../components/portal/PortalPrivacy'
 
 function mountPortalComponents(container) {
   const roots = []
@@ -122,7 +123,10 @@ export function LegacyPage({ page }) {
     <>
       <ToastProvider />
       <SystemConfirmProvider />
-      <div ref={containerRef} dangerouslySetInnerHTML={{ __html: markup }} />
+      <div className={page === 'portal' ? 'portal-page' : undefined}>
+        <div ref={containerRef} className={page === 'portal' ? 'portal-content' : undefined} dangerouslySetInnerHTML={{ __html: markup }} />
+        {page === 'portal' && markup && <PortalPrivacy />}
+      </div>
     </>
   )
 }
